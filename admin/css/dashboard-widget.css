@@ -1,0 +1,151 @@
+/* ─────────────────────────────────────────────────────────────────
+   Slash Image — WordPress dashboard widget styles. Scoped under
+   #slash_image_dashboard_widget so styles cannot leak into adjacent
+   core widgets.
+   ───────────────────────────────────────────────────────────────── */
+
+#slash_image_dashboard_widget .slash-image-dw {
+	font-size: 13px;
+	line-height: 1.5;
+	color: #1d2327;
+}
+
+#slash_image_dashboard_widget .slash-image-dw__header {
+	display: flex;
+	justify-content: flex-end;
+	margin: 0 0 12px;
+}
+
+#slash_image_dashboard_widget .slash-image-dw-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 2px 10px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	text-decoration: none;
+	border: 1px solid #e1e2e6;
+	background: #fff;
+	color: #50575e;
+	letter-spacing: 0.02em;
+}
+
+#slash_image_dashboard_widget .slash-image-dw-pill__dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: #c4c6cc;
+}
+
+#slash_image_dashboard_widget .slash-image-dw-pill.is-connected {
+	background: #ecf7f2;
+	border-color: #b6e0cf;
+	color: #00875a;
+}
+
+#slash_image_dashboard_widget .slash-image-dw-pill.is-connected .slash-image-dw-pill__dot {
+	background: #00875a;
+	box-shadow: 0 0 0 3px rgba(0, 135, 90, 0.12);
+}
+
+#slash_image_dashboard_widget .slash-image-dw-pill.is-disconnected {
+	background: #fef6ec;
+	border-color: #f4c98b;
+	color: #b54708;
+}
+
+#slash_image_dashboard_widget .slash-image-dw-pill.is-disconnected .slash-image-dw-pill__dot {
+	background: #b54708;
+}
+
+#slash_image_dashboard_widget .slash-image-dw-pill.is-invalid {
+	background: #fef3f2;
+	border-color: #fecdca;
+	color: #b42318;
+}
+
+#slash_image_dashboard_widget .slash-image-dw-pill.is-invalid .slash-image-dw-pill__dot {
+	background: #b42318;
+}
+
+#slash_image_dashboard_widget a.slash-image-dw-pill:hover { filter: brightness(0.96); }
+
+#slash_image_dashboard_widget .slash-image-dw__stats {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px 18px;
+	padding: 4px 0 12px;
+	border-bottom: 1px solid #e1e2e6;
+}
+
+#slash_image_dashboard_widget .slash-image-dw__cell {
+	min-width: 0;
+}
+
+#slash_image_dashboard_widget .slash-image-dw__value {
+	margin: 0;
+	font-size: 22px;
+	font-weight: 700;
+	line-height: 1.1;
+	letter-spacing: -0.02em;
+	color: #1d2327;
+	font-variant-numeric: tabular-nums;
+}
+
+#slash_image_dashboard_widget .slash-image-dw__label {
+	margin: 2px 0 0;
+	font-size: 11px;
+	color: #646970;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	font-weight: 600;
+}
+
+#slash_image_dashboard_widget .slash-image-dw__when {
+	margin: 12px 0 0;
+	font-size: 12px;
+	color: #646970;
+}
+
+#slash_image_dashboard_widget .slash-image-dw__actions {
+	margin: 12px 0 0;
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+#slash_image_dashboard_widget .slash-image-dw__actions .button {
+	font-size: 12px;
+}
+
+#slash_image_dashboard_widget .slash-image-dw__actions .button-primary {
+	background: #4438ca;
+	border-color: #4438ca;
+}
+
+#slash_image_dashboard_widget .slash-image-dw__actions .button-primary:hover,
+#slash_image_dashboard_widget .slash-image-dw__actions .button-primary:focus {
+	background: #362dab;
+	border-color: #362dab;
+}
+
+#slash_image_dashboard_widget .slash-image-dw__onboard {
+	padding: 4px 0 0;
+}
+
+#slash_image_dashboard_widget .slash-image-dw__onboard-text {
+	margin: 0 0 12px;
+	color: #50575e;
+}
+
+#slash_image_dashboard_widget .slash-image-dw__onboard .button-primary {
+	background: #4438ca;
+	border-color: #4438ca;
+}
+
+#slash_image_dashboard_widget .slash-image-dw__onboard .button-primary:hover,
+#slash_image_dashboard_widget .slash-image-dw__onboard .button-primary:focus {
+	background: #362dab;
+	border-color: #362dab;
+}

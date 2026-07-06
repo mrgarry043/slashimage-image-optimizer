@@ -1,0 +1,8 @@
+# OS / editor cruft — never ship these
+.DS_Store
+Thumbs.db
+*.log
+*.swp
+*.swo
+.idea/
+.vscode/

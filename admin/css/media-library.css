@@ -1,0 +1,352 @@
+/* ─────────────────────────────────────────────────────────────────
+   Slash Image — Media Library + attachment edit-screen styles.
+   Loaded only on upload.php and post.php?post_type=attachment.
+   ───────────────────────────────────────────────────────────────── */
+
+/* Meta box on the attachment edit screen */
+
+.slash-image-mb {
+	font-size: 13px;
+	line-height: 1.5;
+	color: #1d2327;
+}
+
+.slash-image-mb__status {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0 0 10px;
+	font-weight: 600;
+}
+
+.slash-image-mb__status .dashicons {
+	font-size: 18px;
+	width: 18px;
+	height: 18px;
+	line-height: 1;
+}
+
+.slash-image-mb__status--ok    { color: #00875a; }
+.slash-image-mb__status--err   { color: #b42318; }
+.slash-image-mb__status--warn  { color: #b54708; }
+.slash-image-mb__status--muted { color: #50575e; }
+
+.slash-image-mb__help {
+	margin: 0 0 12px;
+	color: #50575e;
+}
+
+.slash-image-mb__help code {
+	font-size: 12px;
+	background: #f6f7f7;
+	padding: 1px 6px;
+	border-radius: 4px;
+}
+
+.slash-image-mb__upgrade {
+	margin: 0 0 12px;
+}
+
+.slash-image-mb__upgrade a {
+	color: #4438ca;
+	font-weight: 500;
+	text-decoration: none;
+}
+
+.slash-image-mb__upgrade a:hover { text-decoration: underline; }
+
+.slash-image-mb__stats {
+	margin: 0 0 12px;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 6px 12px;
+}
+
+.slash-image-mb__stats > div {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.slash-image-mb__stats dt {
+	margin: 0;
+	font-size: 11px;
+	font-weight: 600;
+	color: #646970;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.slash-image-mb__stats dd {
+	margin: 0;
+	font-size: 13px;
+	color: #1d2327;
+	font-variant-numeric: tabular-nums;
+}
+
+.slash-image-mb__sizes,
+.slash-image-mb__when {
+	margin: 8px 0;
+	font-size: 12px;
+	color: #646970;
+}
+
+.slash-image-mb__actions {
+	margin: 12px 0 0;
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.slash-image-mb__actions .button { font-size: 12px; }
+
+/* ── Media Library status column — fresh implementation ───── */
+
+/* Fixed column width so detail rows like "Original size: 343.0 KB" sit on
+   one line. Top-aligned, native table-cell layout — no flex wrapper. */
+.column-slash_image_status,
+table.wp-list-table .column-slash_image_status {
+	width: 280px;
+	text-align: left;
+	vertical-align: top;
+}
+
+@media ( min-width: 1151px ) and ( max-width: 1800px ) {
+	.column-slash_image_status,
+	table.wp-list-table .column-slash_image_status {
+		width: 200px;
+	}
+}
+
+.slash-image-col {
+	font-size: 12px;
+	line-height: 1.45;
+	color: #50575e;
+}
+
+/* Optimized headline */
+.slash-image-col-headline {
+	margin: 0 0 4px;
+	font-size: 13px;
+	font-weight: 600;
+	color: #1d2327;
+}
+
+.slash-image-col-pct {
+	color: #4438ca;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.slash-image-col-mode {
+	font-weight: 400;
+	color: #646970;
+	font-size: 12px;
+}
+
+/* Compact lines (thumbnails, AVIF, WebP, PNG→JPEG) */
+.slash-image-col-line {
+	margin: 0 0 2px;
+	font-size: 12px;
+	color: #50575e;
+}
+
+.slash-image-col-muted {
+	color: #646970;
+}
+
+/* View details toggle — plain text + chevron, no chrome */
+.slash-image-col-toggle {
+	background: transparent;
+	border: 0;
+	padding: 0;
+	margin: 6px 0 0;
+	font-size: 12px;
+	color: #4438ca;
+	font-weight: 500;
+	cursor: pointer;
+	font-family: inherit;
+}
+
+.slash-image-col-toggle:hover {
+	text-decoration: underline;
+}
+
+.slash-image-col-toggle:focus-visible {
+	outline: 2px solid #4438ca;
+	outline-offset: 2px;
+	border-radius: 2px;
+}
+
+.slash-image-col-toggle .slash-image-col-toggle__close {
+	display: none;
+}
+
+.slash-image-col-toggle[aria-expanded="true"] .slash-image-col-toggle__open {
+	display: none;
+}
+
+.slash-image-col-toggle[aria-expanded="true"] .slash-image-col-toggle__close {
+	display: inline;
+}
+
+/* Detail block — collapsed by default, smooth expand */
+.slash-image-col-details {
+	max-height: 0;
+	overflow: hidden;
+	transition: max-height 200ms ease;
+}
+
+.slash-image-col-details.is-expanded {
+	max-height: 500px;
+}
+
+.slash-image-col-divider {
+	height: 1px;
+	background: #e1e2e6;
+	margin: 8px 0;
+}
+
+.slash-image-col-detail-row {
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: 4px 12px;
+	margin-bottom: 2px;
+}
+
+.slash-image-col-detail-label {
+	font-size: 11px;
+	color: #646970;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.slash-image-col-detail-value {
+	font-size: 12px;
+	color: #4438ca;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}
+
+.slash-image-col-detail-value--baseline {
+	color: #1d2327;
+	font-weight: 500;
+}
+
+/* Failed state */
+.slash-image-col-error {
+	margin: 6px 0 0;
+	font-size: 12px;
+	color: #b42318;
+	line-height: 1.4;
+}
+
+/* Not-processable state */
+.slash-image-col--not-processable .slash-image-col-line:first-child {
+	color: #1d2327;
+	margin-bottom: 2px;
+}
+
+/* Stalled state — amber, distinct from the red "failed" error and the
+   animated "Optimizing…" pill, to signal "stuck, not failed; retry to restart". */
+.slash-image-col--stalled .slash-image-col-line {
+	margin: 6px 0 0;
+	font-size: 12px;
+	color: #946200;
+	line-height: 1.4;
+}
+
+/* ── Pills (queued / processing / restoring only) ─────────────── */
+
+.slash-image-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px;
+	border-radius: 6px;
+	font-size: 12px;
+	font-weight: 500;
+	background: #ece9fb;
+	color: #4438ca;
+	white-space: nowrap;
+}
+
+.slash-image-pill__spinner {
+	display: inline-block;
+	width: 12px;
+	height: 12px;
+	border: 2px solid rgba( 68, 56, 202, 0.25 );
+	border-top-color: #4438ca;
+	border-radius: 50%;
+	animation: slash-image-pill-spin 700ms linear infinite;
+}
+
+.slash-image-pill__spinner--static {
+	animation: none;
+}
+
+@keyframes slash-image-pill-spin {
+	to { transform: rotate( 360deg ); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.slash-image-pill__spinner { animation: none; }
+	.slash-image-col-details { transition: none; }
+}
+
+.slash-image-status-actions {
+	margin-top: 10px;
+	display: flex;
+	gap: 4px;
+	flex-wrap: wrap;
+}
+
+.slash-image-status-actions .button-small {
+	font-size: 11px;
+	padding: 1px 8px;
+	height: auto;
+	line-height: 1.7;
+}
+
+/* Media Library list view: cap column width and vertically center
+   pills/blocks within the table row. */
+.slash-image-mlcol {
+	display: flex;
+	align-items: center;
+	min-height: 64px; /* matches WP's typical media row height */
+	max-width: 220px;
+}
+
+/* Meta box on the attachment edit screen: vertically center pill states
+   for consistency with the column. The optimized state already renders a
+   top-aligned details block, which is correct for that context. */
+#slash-image-status .inside .slash-image-status-pill {
+	margin: 4px 0;
+}
+
+/* Re-optimize-as-mode links (meta box, optimized state). Only the two non-current
+   modes appear, as links separated by a middot. */
+.slash-image-reoptimize-modes {
+	margin: 10px 0 6px;
+	font-size: 12px;
+	line-height: 1.8;
+}
+.slash-image-reoptimize-modes .slash-image-label { color: #646970; margin-right: 4px; }
+.slash-image-reoptimize-modes .slash-image-mode-sep { color: #c3c4c7; }
+.slash-image-reoptimize-modes .slash-image-mode-link.is-busy { opacity: 0.5; pointer-events: none; }
+
+/* Edit-screen re-optimize completion: green "Optimized ✓" + muted reload hint. */
+.slash-image-reopt-done {
+	font-size: 13px;
+	font-weight: 600;
+	color: #00875a;
+	margin: 6px 0 2px;
+}
+.slash-image-reopt-reload {
+	margin: 0;
+	font-size: 11px;
+	color: #646970;
+}

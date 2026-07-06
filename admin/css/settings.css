@@ -1,0 +1,818 @@
+/**
+ * Slash Image — Settings page (flat-panel redesign).
+ *
+ * One centered white panel: header · stats strip · tabs · body (hairline-divided
+ * groups) · footer. Tokens are scoped to .slash-image-app so nothing leaks into
+ * wp-admin. The accent is the plugin's brand indigo (#4438ca); soft/hover tints
+ * derive from it via color-mix, so re-theming is a one-variable change.
+ *
+ * Flat is the default. To turn the sections back into cards, add the `cards`
+ * class to .slash-image-app — see "Card mode" at the bottom. Each .slash-image-group
+ * is a self-contained block, so no markup changes are needed for that switch.
+ */
+
+/* ── Shared base — DO NOT scope to the redesign ─────────────
+ * The --slash-* design tokens + box-sizing reset + [hidden] rule live on
+ * .slash-image-app and are depended on by every admin page that uses that root.
+ * The Bulk Optimize page loads THIS file purely for these. The settings-page
+ * redesign below is scoped to .slash-image-app--settings so it never touches
+ * the Bulk page or any other .slash-image-app surface.
+ */
+.slash-image-app {
+	--slash-color-primary: #4438ca;
+	--slash-color-primary-hover: #362dab;
+	--slash-color-primary-active: #2a2389;
+	--slash-color-primary-soft: #ece9fb;
+	--slash-color-primary-tint: #f4f2fd;
+
+	--slash-color-success: #00875a;
+	--slash-color-success-bg: #ecf7f2;
+	--slash-color-success-border: #b6e0cf;
+
+	--slash-color-warning: #b54708;
+	--slash-color-warning-bg: #fef6ec;
+	--slash-color-warning-border: #f4c98b;
+
+	--slash-color-danger: #b42318;
+	--slash-color-danger-hover: #912018;
+	--slash-color-danger-bg: #fdf2f1;
+	--slash-color-danger-border: #f3c4c0;
+
+	--slash-bg-card: #ffffff;
+	--slash-bg-app: #f6f7f7;
+
+	--slash-border-subtle: #e1e2e6;
+	--slash-border-stronger: #c4c6cc;
+	--slash-border-input: #cbcdd3;
+
+	--slash-radius: 10px;
+	--slash-radius-sm: 6px;
+	--slash-radius-pill: 999px;
+
+	--slash-shadow-sm: 0 1px 2px rgba(15, 23, 42, .04), 0 0 0 1px rgba(15, 23, 42, .03);
+	--slash-shadow-md: 0 6px 16px -4px rgba(15, 23, 42, .08);
+	--slash-focus-ring: 0 0 0 3px rgba(68, 56, 202, .25);
+
+	--slash-text-primary: #1d2327;
+	--slash-text-secondary: #3c434a;
+	--slash-text-muted: #646970;
+	--slash-text-on-primary: #ffffff;
+
+	--slash-space-1: 4px;
+	--slash-space-2: 8px;
+	--slash-space-3: 12px;
+	--slash-space-4: 16px;
+	--slash-space-5: 20px;
+	--slash-space-6: 24px;
+	--slash-space-7: 32px;
+	--slash-space-8: 48px;
+
+	--slash-text-xs: 12px;
+	--slash-text-sm: 13px;
+	--slash-text-base: 14px;
+	--slash-text-lg: 16px;
+	--slash-text-xl: 18px;
+	--slash-text-2xl: 22px;
+	--slash-display: 56px;
+
+	max-width: 920px;
+	margin: var(--slash-space-5) auto var(--slash-space-8);
+	padding: 0 var(--slash-space-4);
+	color: var(--slash-text-primary);
+	font-size: var(--slash-text-base);
+	line-height: 1.45;
+}
+
+.slash-image-app *,
+.slash-image-app *::before,
+.slash-image-app *::after { box-sizing: border-box; }
+
+.slash-image-app [hidden] { display: none !important; }
+
+/* WordPress wraps our render in .wrap; suppress its default <h1> + spacing. */
+.wrap > h1:first-child:has(+ .slash-image-app) { display: none; }
+
+/* ── Settings-page redesign (scoped to the settings root) ──── */
+.slash-image-app--settings {
+	--si-accent: #4438ca;
+	--si-accent-weak: color-mix( in srgb, var(--si-accent) 9%, #fff );
+	--si-accent-weak-2: color-mix( in srgb, var(--si-accent) 20%, #fff );
+	--si-accent-600: color-mix( in srgb, var(--si-accent) 84%, #000 );
+	--si-ink: #1d1f25;
+	--si-ink-2: #3a414a;
+	--si-muted: #6b7280;
+	--si-muted-2: #9aa0ab;
+	--si-line: #ececf1;
+	--si-line-strong: #dde0e6;
+	--si-panel: #fff;
+	--si-strip: #fbfbfd;
+	--si-danger: #d63638;
+	--si-danger-weak: #fdf1f1;
+	--si-ok: #1a7f47;
+	--si-ok-weak: #e8f6ed;
+	--si-radius: 10px;
+	--si-rowpad: 14px;
+	--si-secpad: 22px;
+
+	max-width: 900px;
+	margin: 20px auto 40px;
+	padding: 0;
+	/* No surface on the wrapper itself — each section carries its own background
+	 * (see "Per-section surfaces" below), so the layout can flip between a flat
+	 * stacked panel and individual cards. radius + overflow round the flat stack's
+	 * outer corners; .cards mode below turns overflow off so card shadows show. */
+	border-radius: var(--si-radius);
+	overflow: hidden;
+	color: var(--si-ink);
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, sans-serif;
+	font-size: 14px;
+	line-height: 1.45;
+	-webkit-font-smoothing: antialiased;
+}
+
+/* Generic link color — but NOT link-styled buttons (.slash-image-btn), whose
+ * own color must win (e.g. the white text on the primary CTA button). */
+.slash-image-app--settings a:not(.slash-image-btn) { color: var(--si-accent); }
+
+/* WordPress admin gives h2/h3/p default margins; reset inside the panel so the
+ * group icon + heading align, then components set their own spacing. */
+.slash-image-app--settings h2,
+.slash-image-app--settings h3,
+.slash-image-app--settings p { margin: 0; }
+
+/* ── Per-section surfaces ───────────────────────────────────
+ * The wrapper is transparent; each section paints its own background. In the
+ * default (flat) layout they stack edge-to-edge and read as one panel, divided
+ * by their hairline borders. To experiment with a card layout, add the `cards`
+ * class to .slash-image-app--settings (recipe near the end of this file) — each
+ * of these surfaces then becomes a free-standing card. (.slash-image-strip and
+ * .slash-image-footer keep their own tinted --si-strip surface.) */
+.slash-image-app__hero,
+.slash-image-app__nav,
+.slash-image-body,
+.slash-image-group { background: var(--si-panel); }
+
+/* ── Header ─────────────────────────────────────────────── */
+
+.slash-image-app__hero {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 20px 28px;
+	border-bottom: 1px solid var(--si-line);
+}
+.slash-image-brand { display: flex; align-items: center; gap: 12px; }
+.slash-image-brand__mark {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	height: 34px;
+	background: var(--si-accent);
+	color: #fff;
+	border-radius: 9px;
+	box-shadow: 0 2px 5px color-mix( in srgb, var(--si-accent) 45%, transparent );
+}
+.slash-image-brand__mark svg { width: 20px; height: 20px; }
+.slash-image-brand__name { font-size: 19px; font-weight: 700; letter-spacing: -.01em; color: var(--si-ink); }
+.slash-image-brand__version {
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: .02em;
+	color: var(--si-accent);
+	background: var(--si-accent-weak);
+	padding: 3px 8px;
+	border-radius: 6px;
+}
+
+.slash-image-conn-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	font-size: 12.5px;
+	font-weight: 600;
+	padding: 6px 13px;
+	border-radius: 999px;
+	border: 1px solid #cdeed8;
+	color: var(--si-ok);
+	background: var(--si-ok-weak);
+}
+.slash-image-conn-pill__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.slash-image-conn-pill.is-disconnected {
+	color: var(--si-muted);
+	background: #f3f4f6;
+	border-color: var(--si-line-strong);
+}
+.slash-image-conn-pill.is-invalid {
+	color: #b42318;
+	background: #fef3f2;
+	border-color: #fecdca;
+}
+
+/* ── Stats strip ────────────────────────────────────────── */
+
+.slash-image-strip {
+	display: flex;
+	align-items: center;
+	gap: 22px;
+	padding: 12px 28px;
+	border-bottom: 1px solid var(--si-line);
+	background: var(--si-strip);
+}
+.slash-image-strip__item { display: flex; align-items: baseline; gap: 8px; }
+.slash-image-strip__num { font-size: 18px; font-weight: 750; letter-spacing: -.01em; color: var(--si-ink); font-variant-numeric: tabular-nums; }
+.slash-image-strip__num i { font-style: normal; font-size: 11px; font-weight: 600; color: var(--si-muted); margin-left: 3px; }
+.slash-image-strip__lbl { font-size: 12.5px; color: var(--si-muted); }
+/* Info icon + CSS tooltip covering both stats. The tooltip opens downward so it
+ * stays inside the panel (the wrapper clips overflow in flat mode). */
+.slash-image-strip__info { position: relative; display: inline-flex; align-items: center; align-self: center; margin-left: 2px; color: var(--si-muted-2); cursor: help; }
+.slash-image-strip__info .dashicons { font-size: 15px; width: 15px; height: 15px; }
+.slash-image-strip__info:hover, .slash-image-strip__info:focus { color: var(--si-accent); outline: none; }
+.slash-image-strip__tip {
+	position: absolute;
+	top: calc( 100% + 9px );
+	left: 50%;
+	transform: translateX( -50% ) translateY( 3px );
+	width: 250px;
+	padding: 9px 11px;
+	border-radius: 7px;
+	background: var(--si-ink);
+	color: #fff;
+	font-size: 11.5px;
+	font-weight: 400;
+	line-height: 1.5;
+	letter-spacing: 0;
+	text-align: left;
+	white-space: normal;
+	box-shadow: 0 8px 24px rgba( 17, 17, 26, .22 );
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transition: opacity .13s ease, transform .13s ease;
+	z-index: 30;
+}
+.slash-image-strip__tip::before {
+	content: "";
+	position: absolute;
+	bottom: 100%;
+	left: 50%;
+	transform: translateX( -50% );
+	border: 6px solid transparent;
+	border-bottom-color: var(--si-ink);
+}
+/* Transparent bridge spanning the gap between the icon and the bubble, so the
+   cursor can travel down to the link without :hover dropping (which would close
+   the tooltip). Inherits pointer-events from the bubble — none while hidden,
+   auto once the reveal rule below turns the bubble interactive. */
+.slash-image-strip__tip::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 100%;
+	height: 12px;
+}
+.slash-image-strip__info:hover .slash-image-strip__tip,
+.slash-image-strip__info:focus-within .slash-image-strip__tip {
+	opacity: 1;
+	visibility: visible;
+	transform: translateX( -50% ) translateY( 0 );
+	pointer-events: auto;
+}
+/* Readable, clickable link on the dark bubble. Out-specifies the generic
+   .slash-image-app--settings a:not(.slash-image-btn) accent-color rule. */
+.slash-image-app--settings .slash-image-strip__tip .tip-link { color: #a5b4fc; text-decoration: underline; }
+.slash-image-strip__sep { width: 1px; height: 20px; background: var(--si-line-strong); flex: 0 0 auto; }
+.slash-image-strip__credits { margin-left: auto; align-items: center; gap: 11px; }
+.slash-image-credit-val { font-size: 13px; font-weight: 700; color: var(--si-ink); font-variant-numeric: tabular-nums; }
+.slash-image-credit-val em { font-style: normal; font-weight: 500; color: var(--si-muted); }
+.slash-image-credit-unlimited { font-size: 13px; font-weight: 700; color: var(--si-ink); }
+.slash-image-credit-bar { width: 120px; height: 6px; border-radius: 99px; background: #e7e7ee; overflow: hidden; }
+.slash-image-credit-bar > i { display: block; height: 100%; background: var(--si-accent); border-radius: 99px; }
+.slash-image-credit-bar.is-low > i { background: var(--si-danger); }
+
+/* ── Tabs ───────────────────────────────────────────────── */
+
+.slash-image-app__nav {
+	display: flex;
+	gap: 2px;
+	padding: 0 22px;
+	border-bottom: 1px solid var(--si-line);
+}
+.slash-image-tab {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 13px 14px;
+	border: 0;
+	background: none;
+	font: inherit;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--si-muted);
+	cursor: pointer;
+	border-bottom: 2px solid transparent;
+	margin-bottom: -1px;
+	transition: color .12s;
+}
+.slash-image-tab .dashicons { font-size: 16px; width: 16px; height: 16px; opacity: .8; }
+.slash-image-tab:hover { color: var(--si-ink-2); }
+.slash-image-tab.is-active { color: var(--si-accent); border-bottom-color: var(--si-accent); }
+.slash-image-tab.is-active .dashicons { opacity: 1; }
+
+.slash-image-tab-panel { display: none; }
+.slash-image-tab-panel.is-active { display: block; }
+
+/* ── Body + groups ──────────────────────────────────────── */
+
+.slash-image-body { padding: 6px 0; }
+.slash-image-group { padding: var(--si-secpad) 28px; border-bottom: 1px solid var(--si-line); }
+.slash-image-group:last-child { border-bottom: 0; }
+
+.slash-image-grouphead { display: flex; align-items: flex-start; gap: 12px; }
+.slash-image-group__ic {
+	flex: 0 0 auto;
+	width: 30px;
+	height: 30px;
+	border-radius: 8px;
+	background: var(--si-accent-weak);
+	color: var(--si-accent);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.slash-image-group__ic .dashicons { font-size: 17px; width: 17px; height: 17px; }
+.slash-image-group__title { font-size: 15px; font-weight: 700; letter-spacing: -.01em; color: var(--si-ink); }
+.slash-image-group__desc { font-size: 12.5px; color: var(--si-muted); margin-top: 2px; }
+.slash-image-group.danger .slash-image-group__title { color: var(--si-danger); }
+.slash-image-group__body { padding-left: 42px; margin-top: 8px; }
+
+/* Danger Zone — a contained red-header card (border + tinted header) rather than
+ * a flat section, so destructive operations clearly stand apart. */
+.slash-image-group.danger {
+	margin: 16px 28px 24px;
+	padding: 0;
+	border: 1px solid #f0cccd;
+	border-radius: var(--si-radius);
+	overflow: hidden;
+}
+.slash-image-group.danger .slash-image-grouphead {
+	background: var(--si-danger-weak);
+	padding: 14px 18px;
+	border-bottom: 1px solid #f0cccd;
+}
+.slash-image-group.danger .slash-image-group__ic { background: #fff; color: var(--si-danger); }
+.slash-image-group.danger .slash-image-group__body {
+	margin-top: 0;
+	padding: 6px 18px 10px;
+}
+
+/* ── Setting row ────────────────────────────────────────── */
+
+.slash-image-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 28px;
+	padding: var(--si-rowpad) 0;
+	border-top: 1px solid var(--si-line);
+}
+.slash-image-group__body > .slash-image-row:first-child { border-top: 0; padding-top: 4px; }
+.slash-image-row--stacked { flex-direction: column; gap: 14px; align-items: stretch; }
+.slash-image-row__head { flex: 1 1 auto; min-width: 0; }
+.slash-image-row__label { font-size: 13.5px; font-weight: 650; color: var(--si-ink-2); }
+.slash-image-row__help { font-size: 12.5px; color: var(--si-muted); margin-top: 3px; line-height: 1.5; max-width: 64ch; text-wrap: pretty; }
+.slash-image-row__followup { font-size: 12.5px; color: var(--si-muted); margin-top: 8px; }
+.slash-image-row__list { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--si-muted); list-style: disc; }
+.slash-image-row__list li { margin: 2px 0; list-style: disc; }
+.slash-image-row__control { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding-top: 1px; }
+.slash-image-row.is-disabled { opacity: .5; pointer-events: none; }
+.slash-image-row.is-hidden { display: none; }
+
+.slash-image-helper-badge {
+	display: inline-block;
+	font-size: 11px;
+	font-weight: 700;
+	color: var(--si-accent);
+	background: var(--si-accent-weak);
+	padding: 1px 7px;
+	border-radius: 5px;
+	margin-right: 4px;
+}
+
+/* ── Toggle (checkbox-backed) ───────────────────────────── */
+
+.slash-image-toggle { position: relative; display: inline-flex; flex: 0 0 auto; cursor: pointer; }
+.slash-image-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+.slash-image-toggle__track {
+	display: block;
+	width: 42px;
+	height: 24px;
+	border-radius: 99px;
+	background: #cdd0d8;
+	padding: 2px;
+	transition: background .18s;
+}
+.slash-image-toggle__thumb {
+	display: block;
+	width: 20px;
+	height: 20px;
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: 0 1px 2px rgba( 0, 0, 0, .28 );
+	transition: transform .18s;
+}
+.slash-image-toggle input:checked + .slash-image-toggle__track { background: var(--si-accent); }
+.slash-image-toggle input:checked + .slash-image-toggle__track .slash-image-toggle__thumb { transform: translateX( 18px ); }
+.slash-image-toggle input:focus-visible + .slash-image-toggle__track { outline: 2px solid var(--si-accent); outline-offset: 2px; }
+.slash-image-group.danger .slash-image-toggle input:checked + .slash-image-toggle__track { background: var(--si-danger); }
+
+/* ── Segmented (FlyingPress-style separated buttons) ────── */
+
+.slash-image-segmented-wrapper { display: flex; justify-content: flex-end; }
+.slash-image-segmented { display: inline-flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.slash-image-segment {
+	border: 1px solid var(--si-line-strong);
+	background: #fff;
+	border-radius: 8px;
+	padding: 8px 16px;
+	font: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--si-ink-2);
+	cursor: pointer;
+	transition: .12s;
+	white-space: nowrap;
+}
+.slash-image-segment:hover { background: #f7f7fa; border-color: #cbcfd6; }
+.slash-image-segment.is-active {
+	background: var(--si-accent);
+	border-color: var(--si-accent);
+	color: #fff;
+	box-shadow: 0 1px 2px color-mix( in srgb, var(--si-accent) 40%, transparent );
+}
+
+/* ── Number field ───────────────────────────────────────── */
+
+.slash-image-inline-fields { display: inline-flex; align-items: center; gap: 9px; }
+.slash-image-inline-fields .slash-image-dims-x { color: var(--si-muted); font-size: 13px; }
+.slash-image-input-group {
+	display: inline-flex;
+	align-items: center;
+	border: 1px solid var(--si-line-strong);
+	border-radius: 8px;
+	background: #fff;
+	overflow: hidden;
+}
+.slash-image-input-group input {
+	width: 88px;
+	min-width: 0;
+	border: 0;
+	outline: 0;
+	font: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--si-ink);
+	padding: 8px 2px 8px 12px;
+	background: none;
+}
+.slash-image-input-suffix { font-size: 12px; color: var(--si-muted); padding: 0 11px 0 4px; }
+
+/* ── Buttons ────────────────────────────────────────────── */
+
+.slash-image-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	font: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--si-ink-2);
+	background: #fff;
+	border: 1px solid var(--si-line-strong);
+	border-radius: 8px;
+	padding: 8px 14px;
+	cursor: pointer;
+	transition: .12s;
+	white-space: nowrap;
+	text-decoration: none;
+}
+.slash-image-btn:hover { background: #f7f7fa; border-color: #cbcfd6; color: var(--si-ink-2); }
+.slash-image-btn--primary {
+	background: var(--si-accent);
+	border-color: var(--si-accent);
+	color: #fff;
+	box-shadow: 0 1px 2px color-mix( in srgb, var(--si-accent) 40%, transparent );
+}
+.slash-image-btn--primary:hover { background: var(--si-accent-600); border-color: var(--si-accent-600); color: #fff; }
+.slash-image-btn--soft { background: var(--si-accent-weak); border-color: var(--si-accent-weak-2); color: var(--si-accent); }
+.slash-image-btn--soft:hover { background: var(--si-accent-weak-2); color: var(--si-accent); }
+.slash-image-btn--danger { background: var(--si-danger); border-color: var(--si-danger); color: #fff; }
+.slash-image-btn--danger:hover { background: var(--si-danger); border-color: var(--si-danger); color: #fff; filter: brightness( .92 ); }
+.slash-image-btn--danger-outline { color: var(--si-danger); border-color: #e8babb; background: #fff; }
+.slash-image-btn--danger-outline:hover { background: var(--si-danger-weak); color: var(--si-danger); }
+.slash-image-btn--lg { padding: 10px 20px; font-size: 13.5px; }
+.slash-image-btn[disabled] { opacity: .55; cursor: not-allowed; }
+
+/* ── Bulk CTA banner ────────────────────────────────────── */
+
+.slash-image-cta {
+	display: flex;
+	align-items: center;
+	gap: 15px;
+	margin: 18px 28px;
+	padding: 15px 18px;
+	border-radius: 12px;
+	background: var(--si-accent-weak);
+	border: 1px solid var(--si-accent-weak-2);
+}
+.slash-image-cta__ic {
+	width: 38px;
+	height: 38px;
+	border-radius: 10px;
+	background: #fff;
+	color: var(--si-accent);
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 1px 3px color-mix( in srgb, var(--si-accent) 25%, transparent );
+}
+.slash-image-cta__ic .dashicons { font-size: 20px; width: 20px; height: 20px; }
+.slash-image-cta__body { flex: 1 1 auto; min-width: 0; }
+.slash-image-cta__title { font-size: 14.5px; font-weight: 700; color: var(--si-ink); }
+.slash-image-cta__desc { font-size: 12.5px; color: var(--si-muted); margin-top: 2px; }
+
+/* ── API key row ────────────────────────────────────────── */
+
+.slash-image-keyfield {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+}
+.slash-image-keyfield__inputwrap {
+	position: relative;
+	flex: 1 1 auto;
+	min-width: 0;
+	display: flex;
+	align-items: center;
+}
+.slash-image-keyfield input {
+	width: 100%;
+	min-width: 0;
+	border: 1px solid var(--si-line-strong);
+	border-radius: 9px;
+	padding: 9px 12px;
+	background: #fbfbfd;
+	font: inherit;
+	font-size: 13px;
+	letter-spacing: 1px;
+	color: var(--si-ink);
+	transition: border-color .15s, box-shadow .15s;
+}
+.slash-image-keyfield input:focus { outline: 0; border-color: var(--si-accent); box-shadow: 0 0 0 3px color-mix( in srgb, var(--si-accent) 18%, transparent ); }
+.slash-image-keyfield__error { font-size: 12.5px; color: var(--si-danger); margin: 8px 0 0; }
+/* `p.` qualifier so margin out-specifies the .slash-image-app--settings p reset. */
+p.slash-image-keyfield__signup { font-size: 12.5px; color: var(--si-muted); margin: 12px 0 0; }
+/* Invalid-key reconnect block. */
+.slash-image-keyfield__invalid {
+	margin: 0 0 12px;
+	padding: 12px 14px;
+	border: 1px solid #fecdca;
+	background: #fef3f2;
+	border-radius: 8px;
+}
+p.slash-image-keyfield__invalid-msg { font-size: 13px; color: #b42318; font-weight: 600; margin: 0; }
+p.slash-image-keyfield__deadkey { font-size: 12.5px; color: var(--si-muted); margin: 6px 0 0; }
+.slash-image-keyfield__deadkey code { font-size: 12px; }
+
+/* ── Connected key display (read-only input + Disconnect) ──────
+ * Scoped to .slash-image-app for the shared --slash-* tokens. The read-only
+ * input reuses the .slash-image-keyfield input base styles for identical width
+ * and height; .slash-image-key-readonly only changes appearance (no width /
+ * height / padding). Spec token --slash-color-text-secondary doesn't exist here
+ * so it maps to --slash-text-secondary; the subtle bg resolves via the var()
+ * fallback (#f9fafb) since --slash-color-bg-subtle is absent. */
+.slash-image-app .slash-image-key-readonly {
+	cursor: not-allowed;
+	background: var(--slash-color-bg-subtle, #f9fafb);
+	color: var(--slash-text-secondary);
+	font-family: monospace;
+	font-size: var(--slash-text-sm);
+}
+.slash-image-app .slash-image-btn-disconnect {
+	background: #fff !important;
+	color: var(--slash-color-danger) !important;
+	border-color: var(--slash-color-danger) !important;
+	border-radius: 8px !important;
+}
+.slash-image-app .slash-image-btn-disconnect:hover {
+	background: var(--slash-color-danger) !important;
+	color: #fff !important;
+}
+
+/* ── Image-size checkbox grid ───────────────────────────── */
+
+.slash-image-sub-title { font-size: 13px; font-weight: 700; color: var(--si-ink-2); }
+.slash-image-sub-desc { font-size: 12.5px; color: var(--si-muted); margin-top: 2px; }
+.slash-image-sizegrid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px 24px; margin-top: 14px; margin-top: 22px; padding-bottom: 20px;}
+.slash-image-sizegrid__item { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.slash-image-sizegrid__item input {
+	appearance: none;
+	-webkit-appearance: none;
+	flex: 0 0 auto;
+	width: 18px;
+	height: 18px;
+	border-radius: 5px;
+	border: 1.5px solid #c6c9d1;
+	background: #fff;
+	cursor: pointer;
+	position: relative;
+	transition: .12s;
+	margin: 0;
+}
+.slash-image-sizegrid__item input:checked { background: var(--si-accent); border-color: var(--si-accent); }
+.slash-image-sizegrid__item input:checked::after {
+	content: "";
+	position: absolute;
+	left: 5px;
+	top: 2px;
+	width: 5px;
+	height: 9px;
+	border: solid #fff;
+	border-width: 0 2px 2px 0;
+	transform: rotate( 45deg );
+}
+.slash-image-sizegrid__item input:focus-visible { outline: 2px solid var(--si-accent); outline-offset: 2px; }
+.slash-image-sizegrid__label { display: inline-flex; align-items: baseline; gap: 7px; }
+.slash-image-sizegrid__name { font-size: 13px; font-weight: 600; color: var(--si-ink-2); }
+.slash-image-sizegrid__dim { font-size: 12px; font-weight: 500; color: var(--si-muted); }
+.slash-image-sizegrid__hidden { display: none; }
+
+.slash-image-hr { height: 1px; background: var(--si-line); margin: 16px 0; }
+
+/* ── Frontend serving extras ────────────────────────────── */
+
+/* Frontend extras are revealed only when the active delivery method matches
+ * (settings.js sets data-show-when-mode-active="1"/"0"). */
+.slash-image-app--settings [data-show-when-mode] { display: none; }
+.slash-image-app--settings [data-show-when-mode][data-show-when-mode-active="1"] { display: block; }
+
+.slash-image-fe-actions, .slash-image-fe-cloudflare { margin-top: 12px; }
+.slash-image-fe-status { font-size: 12.5px; margin: 8px 0 0; }
+.slash-image-fe-status.is-success { color: var(--si-ok); }
+.slash-image-fe-status.is-error { color: var(--si-danger); }
+.slash-image-fe-link { font-weight: 600; }
+.slash-image-alert {
+	margin-top: 10px;
+	padding: 10px 12px;
+	border-radius: 8px;
+	font-size: 12.5px;
+	border: 1px solid var(--si-line-strong);
+	background: var(--si-strip);
+	color: var(--si-ink-2);
+}
+.slash-image-alert.is-warning { border-color: #f4c98b; background: #fef6ec; color: #b54708; }
+.slash-image-alert.is-success { border-color: #b6e0cf; background: var(--si-ok-weak); color: var(--si-ok); }
+.slash-image-alert.is-error { border-color: #f3c4c0; background: var(--si-danger-weak); color: var(--si-danger); }
+.slash-image-alert--inline { margin-top: 8px; }
+
+/* ── Footer ─────────────────────────────────────────────── */
+
+.slash-image-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 15px 28px;
+	border-top: 1px solid var(--si-line);
+	background: var(--si-strip);
+}
+.slash-image-footer__meta { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--si-muted); }
+.slash-image-footer__meta .dashicons { color: var(--si-ok); font-size: 15px; width: 15px; height: 15px; }
+.slash-image-footer__actions { display: flex; align-items: center; gap: 10px; }
+
+/* ── Exclusions modal ───────────────────────────────────── */
+
+.slash-image-modal { position: fixed; inset: 0; z-index: 100000; display: flex; align-items: center; justify-content: center; }
+.slash-image-modal[hidden] { display: none; }
+.slash-image-modal__backdrop { position: absolute; inset: 0; background: rgba( 17, 17, 26, .45 ); }
+.slash-image-modal__panel {
+	position: relative;
+	width: min( 560px, calc( 100vw - 40px ) );
+	max-height: calc( 100vh - 80px );
+	overflow: auto;
+	background: #fff;
+	border-radius: var(--si-radius);
+	box-shadow: 0 20px 60px rgba( 17, 17, 26, .25 );
+}
+.slash-image-modal__header { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--si-line); }
+.slash-image-modal__title { font-size: 16px; font-weight: 700; color: var(--si-ink); margin: 0; }
+.slash-image-modal__close { border: 0; background: none; font-size: 22px; line-height: 1; color: var(--si-muted); cursor: pointer; }
+.slash-image-modal__body { padding: 18px 22px; font-size: 13px; color: var(--si-ink-2); }
+.slash-image-modal__body p { margin: 0 0 10px; }
+.slash-image-modal__hint { font-size: 12.5px; color: var(--si-muted); }
+.slash-image-modal__textarea {
+	width: 100%;
+	margin: 6px 0 10px;
+	border: 1px solid var(--si-line-strong);
+	border-radius: 8px;
+	padding: 10px 12px;
+	font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+	resize: vertical;
+}
+.slash-image-modal__footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 22px; border-top: 1px solid var(--si-line); }
+
+/* ── Confirmation modal (Danger Zone) ───────────────────────
+ * Scoped to .slash-image-app so it inherits the shared --slash-* tokens. The
+ * inner panel is .slash-image-modal-box, NOT .slash-image-modal — that class is
+ * already the exclusions-modal overlay above (position:fixed; inset:0), which
+ * would otherwise pin this panel full-screen. Spec tokens that don't exist are
+ * mapped to the real ones: --slash-radius (no -md); a literal shadow (no
+ * --slash-shadow-lg); --slash-text-secondary (no --slash-color-text-secondary). */
+.slash-image-app .slash-image-modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba( 0, 0, 0, 0.5 );
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 100000;
+}
+
+.slash-image-app .slash-image-modal-overlay[hidden] {
+	display: none;
+}
+
+.slash-image-app .slash-image-modal-box {
+	background: #fff;
+	border-radius: var(--slash-radius);
+	padding: var(--slash-space-6);
+	max-width: 440px;
+	width: 90%;
+	box-shadow: 0 20px 50px -12px rgba( 15, 23, 42, .35 );
+}
+
+.slash-image-app .slash-image-modal-title {
+	font-size: var(--slash-text-lg);
+	font-weight: 600;
+	margin: 0 0 var(--slash-space-3);
+}
+
+.slash-image-app .slash-image-modal-body {
+	color: var(--slash-text-secondary);
+	margin: 0 0 var(--slash-space-5);
+	line-height: 1.5;
+}
+
+.slash-image-app .slash-image-modal-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--slash-space-3);
+}
+
+.slash-image-app .slash-image-btn-danger {
+	background: var(--slash-color-danger) !important;
+	border-color: var(--slash-color-danger) !important;
+	color: #fff !important;
+}
+
+.slash-image-app .slash-image-btn-danger:hover {
+	opacity: 0.9;
+}
+
+.slash-image-settings-errors:empty { display: none; }
+.slash-image-settings-errors .notice { margin: 14px 28px; }
+
+/* ── Responsive ─────────────────────────────────────────── */
+
+@media ( max-width: 782px ) {
+	.slash-image-app { margin: 12px; }
+	.slash-image-strip { flex-wrap: wrap; gap: 12px 18px; }
+	.slash-image-strip__credits { margin-left: 0; width: 100%; }
+	.slash-image-row { flex-direction: column; gap: 12px; }
+	.slash-image-row__control { align-self: flex-start; }
+	.slash-image-segmented, .slash-image-segmented-wrapper { justify-content: flex-start; }
+	.slash-image-group__body { padding-left: 0; }
+	.slash-image-sizegrid { grid-template-columns: 1fr; }
+	.slash-image-footer { flex-direction: column; align-items: stretch; }
+	.slash-image-footer__actions { justify-content: flex-end; }
+}
+
+/* ── Card mode (optional) ───────────────────────────────────
+ * Add the `cards` class to .slash-image-app--settings to turn the flat,
+ * hairline-divided sections into self-contained cards. No markup change
+ * required — each .slash-image-group is already a standalone block with its
+ * own background (see "Per-section surfaces" above). This is a starting point
+ * to experiment from; tweak gap / radius / shadow to taste.
+ */
+.slash-image-app--settings.cards { overflow: visible; } /* let card shadows show past the wrapper */
+.slash-image-app--settings.cards .slash-image-body { padding: 18px 22px; display: flex; flex-direction: column; gap: 16px; background: transparent; }
+.slash-image-app--settings.cards .slash-image-group {
+	border: 1px solid var(--si-line);
+	border-radius: var(--si-radius);
+	box-shadow: 0 1px 2px rgba( 17, 17, 26, .05 );
+	margin: 0;
+	background: var(--si-panel);
+}
+.slash-image-app--settings.cards .slash-image-group.danger { border-color: #f0cccd; }

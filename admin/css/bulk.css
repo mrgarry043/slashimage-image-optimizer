@@ -1,0 +1,606 @@
+/* ─────────────────────────────────────────────────────────────────
+   Slash Image — Bulk Optimize page (redesign). Inherits the design
+   tokens from settings.css via the .slash-image-app scope; everything
+   here is scoped under .slash-image-app--bulk so nothing leaks into the
+   rest of wp-admin. No :root declarations.
+   ───────────────────────────────────────────────────────────────── */
+
+.slash-image-app--bulk {
+	/* Light donut / progress track — no settings.css equivalent. */
+	--slash-color-track: #e7e7ea;
+	max-width: 880px;
+}
+
+/* Keyframes are global (no selector) — plugin-prefixed to avoid collisions. */
+@keyframes slash-image-spin { to { transform: rotate( 360deg ); } }
+@keyframes slash-image-stripes { to { background-position: 34px 0; } }
+@keyframes slash-image-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* ───────── Layout ───────── */
+.slash-image-app--bulk .bulk-stack {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+/* ───────── Cron banner ───────── */
+.slash-image-bulk-cron-banner {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--slash-space-3);
+	padding: var(--slash-space-4) var(--slash-space-5);
+	background: var(--slash-color-warning-bg);
+	border: 1px solid var(--slash-color-warning-border);
+	color: var(--slash-color-warning);
+	border-radius: var(--slash-radius);
+	font-size: var(--slash-text-sm);
+	line-height: 1.5;
+}
+
+.slash-image-bulk-cron-banner .dashicons {
+	font-size: 18px;
+	width: 18px;
+	height: 18px;
+	margin-top: 1px;
+}
+
+/* ───────── Header ───────── */
+.slash-image-app--bulk .head-bar {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	margin-bottom: 4px;
+}
+
+.slash-image-app--bulk .brand-mark {
+	width: 38px;
+	height: 38px;
+	border-radius: 9px;
+	background: var(--slash-color-primary);
+	color: var(--slash-text-on-primary);
+	font-weight: 700;
+	font-size: 19px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 2px 8px -2px rgba( 68, 56, 202, 0.5 );
+	flex-shrink: 0;
+}
+
+.slash-image-app--bulk .head-titles { min-width: 0; }
+.slash-image-app--bulk .head-bar h1 {
+	font-size: 19px;
+	font-weight: 700;
+	margin: 0;
+	padding: 0;
+	letter-spacing: -0.01em;
+	color: var(--slash-text-primary);
+}
+.slash-image-app--bulk .head-bar .crumb {
+	font-size: 12.5px;
+	color: var(--slash-text-muted);
+	margin-top: 1px;
+}
+
+.slash-image-app--bulk .auto-chip {
+	margin-left: auto;
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	background: var(--slash-color-success-bg);
+	color: var(--slash-color-success);
+	font-size: 12px;
+	font-weight: 600;
+	padding: 6px 12px;
+	border-radius: var(--slash-radius-pill);
+	border: 1px solid var(--slash-color-success-border);
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+.slash-image-app--bulk .auto-chip .dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--slash-color-success);
+}
+.slash-image-app--bulk .auto-chip.is-off {
+	background: var(--slash-bg-app);
+	color: var(--slash-text-muted);
+	border-color: var(--slash-border-subtle);
+}
+.slash-image-app--bulk .auto-chip.is-off .dot { background: var(--slash-border-stronger); }
+.slash-image-app--bulk .auto-chip.is-invalid {
+	background: #fef3f2;
+	color: #b42318;
+	border-color: #fecdca;
+}
+.slash-image-app--bulk .auto-chip.is-invalid .dot { background: #b42318; }
+
+/* ───────── Card base ───────── */
+.slash-image-app--bulk .slash-image-card {
+	background: var(--slash-bg-card);
+	border: 1px solid var(--slash-border-subtle);
+	border-radius: 14px;
+	box-shadow: var(--slash-shadow-sm);
+}
+.slash-image-app--bulk .card-pad { padding: 24px 26px; }
+/* The shared .slash-image-card (settings.css) sets overflow:hidden, which would
+   clip the absolutely-positioned credits tooltip. The action card has nothing
+   inside relying on that clipping, so let it overflow visibly. */
+.slash-image-app--bulk .action-card { overflow: visible; }
+
+/* ───────── Status & Savings card ───────── */
+.slash-image-app--bulk .status {
+	display: grid;
+	grid-template-columns: 240px 1fr;
+}
+.slash-image-app--bulk .status-left {
+	padding: 26px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	border-right: 1px solid var(--slash-border-subtle);
+}
+
+.slash-image-app--bulk .donut {
+	width: 150px;
+	height: 150px;
+	border-radius: 50%;
+	position: relative;
+	/* conic-gradient is set inline (PHP first paint + JS poll). */
+}
+.slash-image-app--bulk .donut .hole {
+	position: absolute;
+	inset: 17%;
+	background: var(--slash-bg-card);
+	border-radius: 50%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+}
+.slash-image-app--bulk .donut .hole .big {
+	font-size: 30px;
+	font-weight: 800;
+	letter-spacing: -0.03em;
+	line-height: 1;
+	color: var(--slash-color-primary);
+	font-variant-numeric: tabular-nums;
+}
+.slash-image-app--bulk .donut .hole .lbl {
+	font-size: 9.5px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--slash-text-muted);
+	margin-top: 4px;
+}
+
+.slash-image-app--bulk .donut-legend {
+	list-style: none;
+	padding: 0;
+	margin: 20px 0 0;
+	display: flex;
+	flex-direction: column;
+	gap: 11px;
+	width: 100%;
+	max-width: 168px;
+}
+.slash-image-app--bulk .donut-legend li {
+	display: grid;
+	grid-template-columns: 10px 1fr auto;
+	gap: 10px;
+	align-items: center;
+	font-size: 12.5px;
+	color: var(--slash-text-secondary);
+}
+.slash-image-app--bulk .donut-legend .sw { width: 10px; height: 10px; border-radius: 3px; }
+.slash-image-app--bulk .donut-legend .sw-primary { background: var(--slash-color-primary); }
+.slash-image-app--bulk .donut-legend .sw-track { background: var(--slash-color-track); }
+.slash-image-app--bulk .donut-legend .sw-danger { background: var(--slash-color-danger); }
+.slash-image-app--bulk .donut-legend b {
+	color: var(--slash-text-primary);
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.slash-image-app--bulk .status-right {
+	padding: 30px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+.slash-image-app--bulk .saved-eyebrow {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--slash-text-muted);
+	margin-bottom: 14px;
+}
+.slash-image-app--bulk .hero-flex {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+	margin-bottom: 18px;
+}
+.slash-image-app--bulk .hero-pct {
+	font-size: 65px;
+	font-weight: 800;
+	letter-spacing: -0.04em;
+	line-height: 0.82;
+	color: var(--slash-color-success);
+	font-variant-numeric: tabular-nums;
+}
+.slash-image-app--bulk .hero-strong {
+	font-size: 17px;
+	font-weight: 700;
+	color: var(--slash-text-primary);
+	letter-spacing: -0.01em;
+	line-height: 1.2;
+}
+.slash-image-app--bulk .hero-muted {
+	font-size: 13px;
+	color: var(--slash-text-muted);
+	margin-top: 4px;
+	max-width: 230px;
+}
+
+.slash-image-app--bulk .size-rows {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+.slash-image-app--bulk .size-row .row-top {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	margin-bottom: 7px;
+}
+.slash-image-app--bulk .size-row .row-top .l {
+	font-size: 12.5px;
+	color: var(--slash-text-secondary);
+	font-weight: 500;
+}
+.slash-image-app--bulk .size-row .row-top .v {
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--slash-text-primary);
+	font-variant-numeric: tabular-nums;
+}
+.slash-image-app--bulk .size-row .track {
+	height: 10px;
+	background: var(--slash-color-track);
+	border-radius: var(--slash-radius-pill);
+	overflow: hidden;
+}
+.slash-image-app--bulk .size-row .track i {
+	display: block;
+	height: 100%;
+	border-radius: var(--slash-radius-pill);
+	transition: width 400ms ease;
+}
+.slash-image-app--bulk .size-row.orig .track i { background: var(--slash-border-stronger); }
+.slash-image-app--bulk .size-row.opt .track i { background: var(--slash-color-primary); }
+
+/* ───────── Action card — idle / running blocks ───────── */
+.slash-image-app--bulk .running { display: none; }
+.slash-image-app--bulk .running.show { display: block; }
+.slash-image-app--bulk .idle.hide { display: none; }
+
+/* One-shot "purge your cache" reminder shown on run completion. */
+.slash-image-app--bulk .slash-image-bulk-complete-note {
+	margin: 0 0 16px;
+	padding: 10px 14px;
+	font-size: 13px;
+	line-height: 1.45;
+	background: var(--slash-color-success-bg);
+	color: var(--slash-color-success);
+	border: 1px solid var(--slash-color-success-border);
+	border-radius: var(--slash-radius);
+}
+.slash-image-app--bulk .slash-image-bulk-complete-note[hidden] { display: none; }
+
+.slash-image-app--bulk .action-head {
+	display: flex;
+	align-items: flex-start;
+	gap: 14px;
+	margin-bottom: 20px;
+}
+.slash-image-app--bulk .action-head .ico {
+	width: 40px;
+	height: 40px;
+	border-radius: 10px;
+	background: var(--slash-color-primary-soft);
+	color: var(--slash-color-primary);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+.slash-image-app--bulk .action-head h2 {
+	font-size: 16px;
+	margin: 0;
+	padding: 0;
+	font-weight: 700;
+	letter-spacing: -0.01em;
+	color: var(--slash-text-primary);
+}
+.slash-image-app--bulk .action-head .sub {
+	font-size: 13px;
+	color: var(--slash-text-muted);
+	margin-top: 2px;
+}
+
+.slash-image-app--bulk .cta-area {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+.slash-image-app--bulk .credit-note {
+	font-size: 13px;
+	color: var(--slash-text-muted);
+	margin-left: auto;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+.slash-image-app--bulk .credit-note b { color: var(--slash-text-secondary); font-weight: 700; }
+
+.slash-image-app--bulk .info { position: relative; display: inline-flex; color: var(--slash-text-muted); cursor: help; outline: none; }
+.slash-image-app--bulk .info:hover, .slash-image-app--bulk .info:focus { color: var(--slash-color-primary); }
+.slash-image-app--bulk .info .tip {
+	position: absolute;
+	bottom: calc( 100% + 10px );
+	right: -8px;
+	width: 268px;
+	background: var(--slash-text-primary);
+	color: #e9e9ec;
+	font-size: 12.5px;
+	line-height: 1.5;
+	font-weight: 400;
+	padding: 12px 14px;
+	border-radius: 10px;
+	box-shadow: 0 12px 30px -8px rgba( 0, 0, 0, 0.4 );
+	opacity: 0;
+	visibility: hidden;
+	transform: translateY( 4px );
+	transition: 0.14s;
+	z-index: 20;
+	text-align: left;
+}
+.slash-image-app--bulk .info:hover .tip,
+.slash-image-app--bulk .info:focus .tip {
+	opacity: 1;
+	visibility: visible;
+	transform: translateY( 0 );
+}
+.slash-image-app--bulk .info .tip::after {
+	content: '';
+	position: absolute;
+	top: 100%;
+	right: 12px;
+	border: 6px solid transparent;
+	border-top-color: var(--slash-text-primary);
+}
+.slash-image-app--bulk .info .tip strong { display: block; color: #fff; font-weight: 700; margin-bottom: 5px; }
+.slash-image-app--bulk .info .tip .tip-note { display: block; margin-top: 8px; color: #c2c4cb; }
+.slash-image-app--bulk .info .tip .tip-link { display: inline-block; margin-top: 9px; color: #b7c0ff; font-weight: 600; text-decoration: none; }
+.slash-image-app--bulk .info .tip p .tip-link { display: inline; margin-top: 0; }
+.slash-image-app--bulk .info .tip .tip-link:hover { text-decoration: underline; }
+.slash-image-app--bulk .info .tip p { margin: 8px 0 0; }
+.slash-image-app--bulk .info .tip p:first-of-type { margin-top: 6px; }
+
+/* Buttons */
+.slash-image-app--bulk .btn {
+	appearance: none;
+	border: none;
+	padding: 13px 22px;
+	border-radius: 9px;
+	font: inherit;
+	font-weight: 700;
+	font-size: 14.5px;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 9px;
+}
+.slash-image-app--bulk .btn-primary {
+	background: var(--slash-color-primary);
+	color: var(--slash-text-on-primary);
+	box-shadow: 0 4px 14px -4px rgba( 68, 56, 202, 0.55 );
+}
+.slash-image-app--bulk .btn-primary:hover { background: var(--slash-color-primary-hover); }
+.slash-image-app--bulk .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.slash-image-app--bulk .btn-ghost {
+	background: var(--slash-bg-card);
+	color: var(--slash-text-primary);
+	border: 1px solid var(--slash-border-subtle);
+}
+.slash-image-app--bulk .btn-ghost:hover { background: var(--slash-bg-app); }
+.slash-image-app--bulk .btn-danger {
+	color: var(--slash-color-danger);
+	border-color: var(--slash-color-danger-border);
+}
+.slash-image-app--bulk .btn-danger:hover { background: var(--slash-color-danger-bg); }
+/* Disabled state while a running-block action's AJAX is in flight (Pause/Cancel/
+   Resume are disabled on click by bulk.js) — grey out + show the not-allowed
+   cursor so the button no longer looks clickable. */
+.slash-image-app--bulk .running .btn[disabled] {
+	opacity: 0.5;
+	cursor: not-allowed;
+	pointer-events: none;
+}
+
+.slash-image-app--bulk .reopt {
+	display: flex;
+	align-items: flex-start;
+	gap: 11px;
+	margin-top: 20px;
+	padding-top: 18px;
+	border-top: 1px solid var(--slash-border-subtle);
+	font-size: 13px;
+}
+.slash-image-app--bulk .reopt input {
+	margin-top: 2px;
+	width: 16px;
+	height: 16px;
+	accent-color: var(--slash-color-primary);
+}
+.slash-image-app--bulk .reopt .t strong { font-weight: 600; color: var(--slash-text-primary); }
+.slash-image-app--bulk .reopt .t .h { color: var(--slash-text-muted); font-size: 12px; margin-top: 2px; display: block; }
+
+.slash-image-bulk-nokey {
+	margin: var(--slash-space-3) 0 0;
+	font-size: var(--slash-text-sm);
+	color: var(--slash-color-warning);
+}
+.slash-image-bulk-nokey a { color: var(--slash-color-warning); font-weight: 500; }
+
+/* ───────── Running state ───────── */
+.slash-image-app--bulk .run-head {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	margin-bottom: 22px;
+}
+.slash-image-app--bulk .run-spinner {
+	width: 40px;
+	height: 40px;
+	border-radius: 10px;
+	background: var(--slash-color-primary-soft);
+	color: var(--slash-color-primary);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+.slash-image-app--bulk .run-spinner svg { animation: slash-image-spin 1s linear infinite; }
+.slash-image-app--bulk .run-head h2 { font-size: 16px; margin: 0; padding: 0; font-weight: 700; color: var(--slash-text-primary); }
+.slash-image-app--bulk .run-head .sub { font-size: 13px; color: var(--slash-text-muted); margin-top: 2px; }
+.slash-image-app--bulk .run-head .count {
+	margin-left: auto;
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--slash-text-primary);
+	font-variant-numeric: tabular-nums;
+}
+.slash-image-app--bulk .run-head .count > span:last-child { color: var(--slash-text-muted); font-weight: 500; }
+
+.slash-image-app--bulk .run-track {
+	height: 12px;
+	background: var(--slash-color-track);
+	border-radius: var(--slash-radius-pill);
+	overflow: hidden;
+	margin-bottom: 8px;
+}
+.slash-image-app--bulk .run-track i {
+	display: block;
+	height: 100%;
+	border-radius: var(--slash-radius-pill);
+	background: repeating-linear-gradient( 45deg, var(--slash-color-primary) 0 12px, var(--slash-color-primary-hover) 12px 24px );
+	background-size: 34px 34px;
+	animation: slash-image-stripes 0.8s linear infinite;
+	transition: width 400ms ease;
+}
+/* Freeze the spinner + striped bar the moment Pause is clicked (is-pausing,
+   before the AJAX returns) and keep them frozen once the run settles to paused. */
+.slash-image-app--bulk .running.is-pausing .run-spinner svg,
+.slash-image-app--bulk .action-card[data-status="paused"] .run-spinner svg,
+.slash-image-app--bulk .running.is-pausing .run-track i,
+.slash-image-app--bulk .action-card[data-status="paused"] .run-track i { animation-play-state: paused; }
+.slash-image-app--bulk .run-pctline {
+	display: flex;
+	justify-content: space-between;
+	font-size: 12px;
+	color: var(--slash-text-muted);
+	margin-bottom: 20px;
+}
+
+.slash-image-app--bulk .run-stats {
+	display: flex;
+	background: var(--slash-bg-app);
+	border: 1px solid var(--slash-border-subtle);
+	border-radius: 10px;
+	overflow: hidden;
+	margin-bottom: 18px;
+}
+.slash-image-app--bulk .run-stats .c { flex: 1; padding: 12px 16px; }
+.slash-image-app--bulk .run-stats .c + .c { border-left: 1px solid var(--slash-border-subtle); }
+.slash-image-app--bulk .run-stats .k { font-size: 11px; color: var(--slash-text-muted); margin-bottom: 3px; }
+.slash-image-app--bulk .run-stats .v {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--slash-text-primary);
+	font-variant-numeric: tabular-nums;
+}
+
+.slash-image-app--bulk .now-list {
+	border: 1px solid var(--slash-border-subtle);
+	border-radius: 10px;
+	overflow: hidden;
+	margin-bottom: 20px;
+}
+.slash-image-app--bulk .now-row {
+	display: flex;
+	align-items: center;
+	gap: 11px;
+	padding: 11px 14px;
+	font-size: 13px;
+}
+.slash-image-app--bulk .now-row + .now-row { border-top: 1px solid var(--slash-border-subtle); }
+.slash-image-app--bulk .now-row.active { background: var(--slash-color-primary-soft); }
+.slash-image-app--bulk .now-row .pulse {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--slash-color-primary);
+	animation: slash-image-pulse 1.1s ease-in-out infinite;
+	flex-shrink: 0;
+}
+.slash-image-app--bulk .now-row .check { width: 15px; height: 15px; color: var(--slash-color-success); flex-shrink: 0; }
+.slash-image-app--bulk .now-row .fname { color: var(--slash-text-primary); font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slash-image-app--bulk .now-row .fname .doing { color: var(--slash-color-primary); font-weight: 600; }
+.slash-image-app--bulk .now-row .meta {
+	margin-left: auto;
+	color: var(--slash-text-muted);
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+.slash-image-app--bulk .now-row .meta .save { color: var(--slash-color-success); font-weight: 700; margin-left: 6px; }
+
+.slash-image-progress-stale {
+	margin: 0 0 16px;
+	font-size: var(--slash-text-sm);
+	color: var(--slash-color-warning);
+	font-weight: 500;
+}
+
+/* ───────── Failed card ───────── */
+.slash-image-app--bulk .failed-head { display: flex; align-items: flex-start; gap: 14px; }
+.slash-image-app--bulk .failed-head .ico-warn {
+	width: 40px;
+	height: 40px;
+	border-radius: 10px;
+	background: var(--slash-color-warning-bg);
+	color: var(--slash-color-warning);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+.slash-image-app--bulk .failed-head h2 { font-size: 15px; margin: 0; padding: 0; font-weight: 700; color: var(--slash-text-primary); }
+.slash-image-app--bulk .failed-sub { margin: 2px 0 0; font-size: 13px; color: var(--slash-text-muted); }
+.slash-image-app--bulk .failed-actions { margin-left: auto; display: flex; gap: 8px; flex-shrink: 0; }
+.slash-image-app--bulk .failed-actions .btn { padding: 8px 14px; font-size: 13px; }
+
+/* ───────── Responsive ───────── */
+@media ( max-width: 640px ) {
+	.slash-image-app--bulk .status { grid-template-columns: 1fr; }
+	.slash-image-app--bulk .status-left { border-right: 0; border-bottom: 1px solid var(--slash-border-subtle); }
+	.slash-image-app--bulk .hero-pct { font-size: 60px; }
+}
