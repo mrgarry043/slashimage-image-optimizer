@@ -46,7 +46,7 @@ class Slash_Image_Bulk_Processor {
 	 * 'running' and lets the worker's feed phase paginate the source
 	 * query — no upfront materialization.
 	 */
-	public static function start( $force_redo = false ) {
+	public static function start( $force_redo = false, $schedule = true ) {
 		// Mutual exclusion: one bulk run at a time. Refuse to start an optimize
 		// run while a restore run is active.
 		if ( Slash_Image_Queue::JOB_TYPE_RESTORE === self::active_run() ) {
@@ -78,7 +78,9 @@ class Slash_Image_Bulk_Processor {
 		$session['last_tick_at']  = time();
 		Slash_Image_Worker::save_session( $session );
 
-		if ( $total > 0 ) {
+		// $schedule=false lets an in-process driver (e.g. WP-CLI) own the drain
+		// with no cron/loopback chain running alongside it.
+		if ( $total > 0 && $schedule ) {
 			Slash_Image_Worker::schedule_cron();
 			// Make the bulk run a tab-closeable background chain. Lock-guarded.
 			Slash_Image_Loopback::maybe_start_chain();
@@ -168,7 +170,7 @@ class Slash_Image_Bulk_Processor {
 	 * source_done is set true on the session — no DB pagination, the worker
 	 * just drains the rows we enqueue here.
 	 */
-	public static function start_with_ids( array $ids, $force_redo = false ) {
+	public static function start_with_ids( array $ids, $force_redo = false, $schedule = true ) {
 		$force_redo = (bool) $force_redo;
 
 		$ids = array_values( array_unique( array_filter( array_map( 'intval', $ids ) ) ) );
@@ -219,7 +221,9 @@ class Slash_Image_Bulk_Processor {
 		$session['last_tick_at']  = time();
 		Slash_Image_Worker::save_session( $session );
 
-		if ( $total > 0 ) {
+		// $schedule=false lets an in-process driver (e.g. WP-CLI) own the drain
+		// with no cron/loopback chain running alongside it.
+		if ( $total > 0 && $schedule ) {
 			Slash_Image_Worker::schedule_cron();
 			// Make the bulk run a tab-closeable background chain. Lock-guarded.
 			Slash_Image_Loopback::maybe_start_chain();

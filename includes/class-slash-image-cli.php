@@ -275,4 +275,182 @@ class Slash_Image_CLI {
 			WP_CLI::success( $summary );
 		}
 	}
+
+	/**
+	 * Optimize images through the SlashImage API, synchronously in the foreground.
+	 *
+	 * Seeds the shared queue with background scheduling suppressed, then drives
+	 * the worker in-process to completion — so the whole run happens inside this
+	 * one command with a live progress bar, with no cron / loopback chain running
+	 * alongside it.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [<id>...]
+	 * : One or more attachment IDs to optimize. Omit when using --all.
+	 *
+	 * [--all]
+	 * : Optimize every eligible attachment in the library.
+	 *
+	 * [--force]
+	 * : Re-queue images that are already optimized (drops the skip-already-optimized filter). NOTE: the worker currently re-optimizes only images queued via retry, so already-optimized images are re-queued and then skipped, not re-optimized. To re-optimize a specific image, use the Media Library "Re-optimize" action, or restore it first with "wp slashimage restore" and then run optimize on that ID.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     # Optimize two specific attachments
+	 *     $ wp slashimage optimize 217 218
+	 *
+	 *     # Optimize the whole library
+	 *     $ wp slashimage optimize --all
+	 *
+	 * @when after_wp_load
+	 *
+	 * @param array $args       Attachment IDs (empty when --all is used).
+	 * @param array $assoc_args Associative arguments (--all, --force).
+	 * @return void
+	 */
+	public function optimize( $args, $assoc_args ) {
+		$all   = (bool) \WP_CLI\Utils\get_flag_value( $assoc_args, 'all', false );
+		$force = (bool) \WP_CLI\Utils\get_flag_value( $assoc_args, 'force', false );
+
+		if ( $all && ! empty( $args ) ) {
+			WP_CLI::error( 'Pass either attachment IDs or --all, not both.' );
+		}
+		if ( ! $all && empty( $args ) ) {
+			WP_CLI::error( 'Specify one or more attachment IDs, or pass --all to optimize the whole library.' );
+		}
+
+		// No-key / dead-key gates, up front — never enqueue dead work or spin on a
+		// no-op tick. (Optimize needs the API; restore does not, hence no gate there.)
+		if ( ! Slash_Image_Connection::has_api_key() ) {
+			WP_CLI::error( 'No API key configured. Add one on the SlashImage settings page first.' );
+		}
+		if ( 'invalid' === Slash_Image_Connection::current_status() ) {
+			WP_CLI::error( 'The configured API key is invalid or was revoked. Reconnect it on the settings page first.' );
+		}
+
+		$ids = $all ? array() : array_values( array_unique( array_filter( array_map( 'intval', $args ) ) ) );
+
+		// Measure how much of the target is ALREADY optimized before seeding, so a
+		// --force run can report honestly. The worker re-optimizes only retry-sourced
+		// rows (process_row derives force from source===retry), so already-optimized
+		// images re-queued by --force are skipped downstream, not re-optimized.
+		$force_already         = 0;
+		$force_has_unoptimized = true;
+		if ( $force ) {
+			if ( $all ) {
+				$counts                = Slash_Image_Bulk_Processor::library_counts();
+				$force_already         = (int) ( $counts['optimized'] ?? 0 );
+				$force_has_unoptimized = ( (int) ( $counts['not_optimized'] ?? 0 ) > 0 );
+			} else {
+				$force_has_unoptimized = false;
+				foreach ( $ids as $target_id ) {
+					$data = get_post_meta( $target_id, Slash_Image_Media_Handler::META_DATA_KEY, true );
+					if ( is_array( $data ) && ! empty( $data['optimized'] ) ) {
+						++$force_already;
+					} else {
+						$force_has_unoptimized = true;
+					}
+				}
+			}
+		}
+
+		// Seed the queue with background scheduling suppressed ($schedule = false):
+		// this command is the sole driver, so no cron / loopback chain runs beside it.
+		$snapshot = $all
+			? Slash_Image_Bulk_Processor::start( $force, false )
+			: Slash_Image_Bulk_Processor::start_with_ids( $ids, $force, false );
+
+		// Surface any refusal code (restore-run mutual exclusion, or a no-key race).
+		if ( ! empty( $snapshot['refused'] ) ) {
+			$refused = (string) $snapshot['refused'];
+			if ( 'restore_running' === $refused ) {
+				WP_CLI::error( 'A restore run is in progress. Wait for it to finish, then run this command again.' );
+			}
+			if ( 'no_key' === $refused ) {
+				WP_CLI::error( 'No API key configured. Add one on the SlashImage settings page first.' );
+			}
+			WP_CLI::error( sprintf( 'Could not start optimization (%s).', $refused ) );
+		}
+
+		// Nothing eligible → clean exit (e.g. --all with everything already
+		// optimized and no --force). start*() leaves status != 'running' here.
+		$progress = Slash_Image_Bulk_Processor::progress();
+		if ( 'running' !== (string) $progress['status'] ) {
+			WP_CLI::success( 'Nothing to optimize — no eligible images found.' );
+			return;
+		}
+
+		// Foreground drain: each iteration runs one full-concurrency worker tick
+		// (feed + drain), then reads the run's progress. Loop until 'completed'.
+		$bar      = \WP_CLI\Utils\make_progress_bar( 'Optimizing', (int) $progress['total'] );
+		$done     = 0;
+		$idle     = 0;
+		$deferred = 0;
+
+		while ( true ) {
+			$tick = Slash_Image_Worker::tick();
+
+			// Dead key mid-run — stop rather than spin (the tick claimed nothing).
+			if ( ! empty( $tick['skipped_invalid'] ) ) {
+				$bar->finish();
+				WP_CLI::error( 'The API key became invalid during the run. Reconnect it, then re-run this command.' );
+			}
+
+			$progress = Slash_Image_Bulk_Processor::progress();
+			$delta    = max( 0, (int) $progress['processed'] - $done );
+			for ( $i = 0; $i < $delta; $i++ ) {
+				$bar->tick();
+			}
+			$done = (int) $progress['processed'];
+
+			if ( 'completed' === (string) $progress['status'] ) {
+				break;
+			}
+
+			// Advancement = this tick claimed a row OR the run's processed count
+			// climbed. The second clause matters on a WP-Cron-active host, where a
+			// cron-spawned loopback chain may drain the shared queue alongside this
+			// command (safe via the atomic claim); the run still advances even when
+			// our own tick claimed nothing, so we must not count that as idle.
+			$advanced = ( (int) ( $tick['claimed'] ?? 0 ) > 0 ) || ( $delta > 0 );
+			$idle     = $advanced ? 0 : ( $idle + 1 );
+
+			// Stuck guard: two consecutive non-advancing ticks with work still
+			// waiting mean the remaining rows are backoff-deferred (available_at in
+			// the future) and nothing can advance them now — stop cleanly and let a
+			// later run pick them up. (Reported as "deferred", not a failure.)
+			if ( $idle >= 2 ) {
+				$deferred = (int) ( Slash_Image_Queue::counts()['waiting'] ?? 0 );
+				break;
+			}
+		}
+
+		$bar->finish();
+
+		$failed = (int) $progress['failed_count'];
+
+		// Honest --force report: when every targeted image was already optimized,
+		// nothing was re-optimized (the worker skipped the re-queued rows). Say so
+		// plainly instead of a misleading "N processed".
+		if ( $force && $force_already > 0 && ! $force_has_unoptimized && 0 === $failed ) {
+			WP_CLI::warning(
+				sprintf(
+					'--force re-queued %d already-optimized image(s), but re-optimizing already-optimized images is not yet supported from the CLI, so they were skipped (no new optimization). Use the Media Library "Re-optimize" action, or run "wp slashimage restore <id>" then "wp slashimage optimize <id>", to re-optimize a specific image.',
+					$force_already
+				)
+			);
+			return;
+		}
+
+		$summary = sprintf( 'Optimize complete: %d processed, %d failed, %d deferred.', $done, $failed, $deferred );
+		if ( $deferred > 0 ) {
+			$summary .= sprintf( ' Re-run `wp slashimage optimize%s` later to finish the deferred image(s).', $all ? ' --all' : '' );
+		}
+		if ( $failed > 0 || $deferred > 0 ) {
+			WP_CLI::warning( $summary );
+		} else {
+			WP_CLI::success( $summary );
+		}
+	}
 }
