@@ -453,4 +453,45 @@ class Slash_Image_CLI {
 			WP_CLI::success( $summary );
 		}
 	}
+
+	/**
+	 * Cancel the active optimize or restore run.
+	 *
+	 * Drops the run's still-waiting queued images and returns the session to idle.
+	 * Non-destructive: only waiting queue rows (which can be re-queued) are removed
+	 * — no files, backups, already-optimized data, completed rows, or an image
+	 * already in progress are touched. Local operation; no API key required.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     $ wp slashimage cancel
+	 *
+	 * @when after_wp_load
+	 *
+	 * @param array $args       Positional arguments (unused).
+	 * @param array $assoc_args Associative arguments (unused).
+	 * @return void
+	 */
+	public function cancel( $args, $assoc_args ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- WP-CLI invokes every command with ( $args, $assoc_args ); cancel needs neither.
+		$session    = Slash_Image_Worker::get_session();
+		$run_status = Slash_Image_Bulk_Processor::decide_run_status(
+			(string) ( $session['status'] ?? 'idle' ),
+			! empty( $session['source_done'] ),
+			count( Slash_Image_Bulk_Processor::queue() )
+		);
+
+		if ( ! in_array( $run_status, array( 'running', 'paused' ), true ) ) {
+			WP_CLI::warning( 'No optimization or restore run is active — nothing to cancel.' );
+			return;
+		}
+
+		$action  = (string) ( $session['action'] ?? Slash_Image_Queue::JOB_TYPE_OPTIMIZE );
+		$waiting = (int) ( Slash_Image_Queue::counts()['waiting'] ?? 0 );
+
+		WP_CLI::log( sprintf( 'Cancelling the active %s run — dropping %d waiting queued image(s).', $action, $waiting ) );
+
+		Slash_Image_Bulk_Processor::cancel();
+
+		WP_CLI::success( sprintf( 'Cancelled the %s run. Waiting images were dropped; any image already in progress finishes, and completed work is kept.', $action ) );
+	}
 }
