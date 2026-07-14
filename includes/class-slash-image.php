@@ -86,5 +86,13 @@ final class Slash_Image {
 		}
 
 		Slash_Image_Restore::schedule_cleanup();
+
+		// WP-CLI command surface (`wp slashimage ...`). Guarded so the CLI class
+		// is only autoloaded under WP-CLI — no overhead on normal web/admin
+		// requests. init() runs on plugins_loaded, which on CLI runs is after
+		// WP_CLI is defined, so the command registers before dispatch.
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			WP_CLI::add_command( 'slashimage', 'Slash_Image_CLI' );
+		}
 	}
 }
