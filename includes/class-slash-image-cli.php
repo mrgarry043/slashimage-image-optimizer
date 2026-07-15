@@ -282,7 +282,9 @@ class Slash_Image_CLI {
 	 * Seeds the shared queue with background scheduling suppressed, then drives
 	 * the worker in-process to completion — so the whole run happens inside this
 	 * one command with a live progress bar, with no cron / loopback chain running
-	 * alongside it.
+	 * alongside it. Refuses to start while an optimize or restore run is already
+	 * active ("wp slashimage cancel" clears a stuck run). Exits non-zero when any
+	 * image in this run fails.
 	 *
 	 * ## OPTIONS
 	 *
@@ -329,6 +331,32 @@ class Slash_Image_CLI {
 			WP_CLI::error( 'The configured API key is invalid or was revoked. Reconnect it on the settings page first.' );
 		}
 
+		// Mutual exclusion: refuse while an optimize run is already active —
+		// seeding would clobber the live session's total/started_at. Same
+		// derived-status read restore/cancel use. A crashed or killed driver can
+		// leave a stale 'running' session behind, so the message always carries
+		// the escape hatch instead of dead-ending the CLI. (A restore run is
+		// caught downstream by start()'s existing restore_running refusal.)
+		$session       = Slash_Image_Worker::get_session();
+		$run_status    = Slash_Image_Bulk_Processor::decide_run_status(
+			(string) ( $session['status'] ?? 'idle' ),
+			! empty( $session['source_done'] ),
+			count( Slash_Image_Bulk_Processor::queue() )
+		);
+		$active_action = in_array( $run_status, array( 'running', 'paused' ), true )
+			? (string) ( $session['action'] ?? Slash_Image_Queue::JOB_TYPE_OPTIMIZE )
+			: '';
+		if ( Slash_Image_Queue::JOB_TYPE_OPTIMIZE === $active_action ) {
+			$started_at = (int) ( $session['started_at'] ?? 0 );
+			$started    = $started_at > 0 ? sprintf( 'started %s ago', human_time_diff( $started_at ) ) : 'start time unknown';
+			WP_CLI::error(
+				sprintf(
+					'An optimization run is already in progress (%s). Wait for it to finish, or run "wp slashimage cancel" to stop it.',
+					$started
+				)
+			);
+		}
+
 		$ids = $all ? array() : array_values( array_unique( array_filter( array_map( 'intval', $args ) ) ) );
 
 		// Measure how much of the target is ALREADY optimized before seeding, so a
@@ -372,6 +400,13 @@ class Slash_Image_CLI {
 			}
 			WP_CLI::error( sprintf( 'Could not start optimization (%s).', $refused ) );
 		}
+
+		// Run-scoped failure baseline, taken right AFTER seeding: enqueue()
+		// clears an attachment's prior terminal failed row when re-queueing it,
+		// so the post-seed count is the true zero point for THIS run's failures.
+		// Pre-existing failed rows from earlier runs never inflate this run's
+		// summary or its exit code.
+		$failed_baseline = (int) ( Slash_Image_Queue::counts()['failed'] ?? 0 );
 
 		// Nothing eligible → clean exit (e.g. --all with everything already
 		// optimized and no --force). start*() leaves status != 'running' here.
@@ -428,7 +463,10 @@ class Slash_Image_CLI {
 
 		$bar->finish();
 
-		$failed = (int) $progress['failed_count'];
+		// This run's failures only: progress()['failed_count'] is queue-GLOBAL
+		// (Slash_Image_Queue::counts()['failed']), so subtract the post-seed
+		// baseline. max( 0, … ) guards the concurrent-cleanup edge.
+		$failed = max( 0, (int) $progress['failed_count'] - $failed_baseline );
 
 		// Honest --force report: when every targeted image was already optimized,
 		// nothing was re-optimized (the worker skipped the re-queued rows). Say so
@@ -445,9 +483,20 @@ class Slash_Image_CLI {
 
 		$summary = sprintf( 'Optimize complete: %d processed, %d failed, %d deferred.', $done, $failed, $deferred );
 		if ( $deferred > 0 ) {
-			$summary .= sprintf( ' Re-run `wp slashimage optimize%s` later to finish the deferred image(s).', $all ? ' --all' : '' );
+			// Accurate on both drive paths: the worker cron retries deferred rows
+			// on its own once their backoff passes, and a straight CLI re-run would
+			// be refused by the active-run guard (the session is still 'running'
+			// with rows pending) — hence the cancel-then-re-run recipe.
+			$summary .= sprintf(
+				' The background worker retries deferred image(s) automatically once their backoff passes. To retry from the CLI instead, run `wp slashimage cancel` and then `wp slashimage optimize%s` — cancel drops the deferred rows and the fresh run re-seeds them (they are still unoptimized).',
+				$all ? ' --all' : ''
+			);
 		}
-		if ( $failed > 0 || $deferred > 0 ) {
+		if ( $failed > 0 ) {
+			// Real failures in this run → non-zero exit so scripts can detect it.
+			WP_CLI::error( $summary );
+		} elseif ( $deferred > 0 ) {
+			// Deferred-only = backoff, re-run later — not a failure; exit 0.
 			WP_CLI::warning( $summary );
 		} else {
 			WP_CLI::success( $summary );
