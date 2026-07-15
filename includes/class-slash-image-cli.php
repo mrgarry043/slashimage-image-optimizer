@@ -213,7 +213,7 @@ class Slash_Image_CLI {
 			? (string) ( $session['action'] ?? Slash_Image_Queue::JOB_TYPE_OPTIMIZE )
 			: '';
 		if ( Slash_Image_Queue::JOB_TYPE_OPTIMIZE === $active_action ) {
-			WP_CLI::error( 'An optimization run is in progress. Pause or cancel it on the Bulk Optimize page, then run this command again.' );
+			WP_CLI::error( 'An optimization run is in progress. Run "wp slashimage cancel" to stop it (or pause/cancel it on the Bulk Optimize page), then run this command again.' );
 		}
 
 		// Resolve the target IDs. For --all, page the backed-up set through the
