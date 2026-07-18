@@ -141,6 +141,9 @@ For general bugs, please open a thread on the plugin support forum. For security
 
 == Changelog ==
 
+= 1.1.0 =
+* New: WP-CLI support — manage optimization from the command line with `wp slashimage status`, `optimize [<ids>|--all] [--force]`, `restore [<ids>|--all] [--yes]`, and `cancel`. Useful for large libraries and hosts where WP-Cron is disabled.
+
 = 1.0.0 =
 * Initial release.
 
