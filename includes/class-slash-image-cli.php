@@ -537,24 +537,6 @@ class Slash_Image_CLI {
 	 * @param array $assoc_args Associative arguments (unused).
 	 * @return void
 	 */
-	/**
-	 * True when an attachment is already optimized but carries no backup record —
-	 * the state a forced re-optimize cannot act on, because it restores from
-	 * backup first rather than re-compressing compressed bytes.
-	 *
-	 * @param int $attachment_id Attachment post ID.
-	 * @return bool
-	 */
-	private static function is_optimized_without_backup( $attachment_id ) {
-		$data = get_post_meta( $attachment_id, Slash_Image_Media_Handler::META_DATA_KEY, true );
-		if ( ! is_array( $data ) || empty( $data['optimized'] ) ) {
-			return false;
-		}
-
-		$backup = get_post_meta( $attachment_id, Slash_Image_Restore::BACKUP_META_KEY, true );
-		return ! is_array( $backup ) || empty( $backup['sizes'] );
-	}
-
 	public function cancel( $args, $assoc_args ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- WP-CLI invokes every command with ( $args, $assoc_args ); cancel needs neither.
 		$session    = Slash_Image_Worker::get_session();
 		$run_status = Slash_Image_Bulk_Processor::decide_run_status(
@@ -576,5 +558,192 @@ class Slash_Image_CLI {
 		Slash_Image_Bulk_Processor::cancel();
 
 		WP_CLI::success( sprintf( 'Cancelled the %s run. Waiting images were dropped; any image already in progress finishes, and completed work is kept.', $action ) );
+	}
+
+	/**
+	 * True when an attachment is already optimized but carries no backup record —
+	 * the state a forced re-optimize cannot act on, because it restores from
+	 * backup first rather than re-compressing compressed bytes.
+	 *
+	 * @param int $attachment_id Attachment post ID.
+	 * @return bool
+	 */
+	private static function is_optimized_without_backup( $attachment_id ) {
+		$data = get_post_meta( $attachment_id, Slash_Image_Media_Handler::META_DATA_KEY, true );
+		if ( ! is_array( $data ) || empty( $data['optimized'] ) ) {
+			return false;
+		}
+
+		$backup = get_post_meta( $attachment_id, Slash_Image_Restore::BACKUP_META_KEY, true );
+		return ! is_array( $backup ) || empty( $backup['sizes'] );
+	}
+
+	/**
+	 * Import another image optimizer's state so its work counts as SlashImage's.
+	 *
+	 * Reads the other plugin's optimization records, writes the equivalent
+	 * SlashImage metadata, and claims its WebP/AVIF sibling files for our
+	 * <picture> rewriter by hardlinking them at the filenames we look for.
+	 *
+	 * Read-only with respect to the source plugin: its tables, settings, files
+	 * and backups are never written, moved, or deleted. Makes no API calls, so
+	 * it works without an API key configured.
+	 *
+	 * Safe to re-run: attachments already migrated, or already optimized by
+	 * SlashImage, are skipped rather than overwritten.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <source>
+	 * : Which optimizer to import from. Currently: shortpixel
+	 *
+	 * [--dry-run]
+	 * : Scan and report what would be imported, writing nothing.
+	 *
+	 * [--batch-size=<n>]
+	 * : Attachments examined per batch. Default 200.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     $ wp slashimage migrate shortpixel --dry-run
+	 *     $ wp slashimage migrate shortpixel
+	 *
+	 * @when after_wp_load
+	 *
+	 * @param array $args       Positional arguments; [0] is the source slug.
+	 * @param array $assoc_args Associative arguments (--dry-run, --batch-size).
+	 * @return void
+	 */
+	public function migrate( $args, $assoc_args ) {
+		$source  = isset( $args[0] ) ? (string) $args[0] : '';
+		$dry_run = (bool) \WP_CLI\Utils\get_flag_value( $assoc_args, 'dry-run', false );
+		$batch   = (int) \WP_CLI\Utils\get_flag_value( $assoc_args, 'batch-size', Slash_Image_Migrate::DEFAULT_BATCH_SIZE );
+
+		if ( '' === $source ) {
+			WP_CLI::error( sprintf( 'Specify a migration source. Available: %s.', implode( ', ', array_keys( Slash_Image_Migrate::adapters() ) ) ) );
+		}
+
+		$adapter = Slash_Image_Migrate::adapter_for( $source );
+		if ( '' === $adapter ) {
+			WP_CLI::error( sprintf( 'Unknown migration source "%s". Available: %s.', $source, implode( ', ', array_keys( Slash_Image_Migrate::adapters() ) ) ) );
+		}
+
+		$label = call_user_func( array( $adapter, 'label' ) );
+
+		// Global refusals (multisite) and source detection run before any work,
+		// so a refusal never leaves a partial import behind.
+		$pre = Slash_Image_Migrate::preflight();
+		if ( empty( $pre['ok'] ) ) {
+			WP_CLI::error( $pre['message'] );
+		}
+		$detect = call_user_func( array( $adapter, 'detect' ) );
+		if ( empty( $detect['ok'] ) ) {
+			// An empty source is not an error: nothing to do is a clean outcome.
+			if ( 'empty' === (string) ( $detect['code'] ?? '' ) ) {
+				WP_CLI::success( (string) $detect['message'] );
+				return;
+			}
+			WP_CLI::error( (string) $detect['message'] );
+		}
+
+		$total = (int) call_user_func( array( $adapter, 'count' ) );
+		WP_CLI::log( sprintf( 'Scanning %s data: %d attachment(s) with optimization records.', $label, $total ) );
+
+		$bar    = \WP_CLI\Utils\make_progress_bar( $dry_run ? 'Scanning' : 'Migrating', $total );
+		$result = Slash_Image_Migrate::run(
+			$source,
+			$dry_run,
+			$batch,
+			function ( $scanned ) use ( $bar ) {
+				for ( $i = 0; $i < (int) $scanned; $i++ ) {
+					$bar->tick();
+				}
+			}
+		);
+		$bar->finish();
+
+		if ( empty( $result['ok'] ) ) {
+			WP_CLI::error( (string) $result['message'] );
+		}
+
+		self::report_migration( $result['stats'], $label, $dry_run );
+	}
+
+	/**
+	 * Print a migration report. Shared by the dry-run and real paths so the two
+	 * can never drift.
+	 *
+	 * @param array  $s       Accumulated stats.
+	 * @param string $label   Source label.
+	 * @param bool   $dry_run Whether this was a scan.
+	 * @return void
+	 */
+	private static function report_migration( array $s, $label, $dry_run ) {
+		WP_CLI::log( '' );
+		WP_CLI::log( $dry_run ? sprintf( 'Would import from %s:', $label ) : sprintf( 'Imported from %s:', $label ) );
+		WP_CLI::log( sprintf( '  Importable attachments:              %d', $s['migrated'] ) );
+		WP_CLI::log( sprintf( '  Already optimized by SlashImage:     %d', $s['already_ours'] ) );
+		WP_CLI::log( sprintf( '  Already migrated:                    %d', $s['already_migrated'] ) );
+		WP_CLI::log(
+			sprintf(
+				'  Skipped, not an importable status:   %d (of which reverted in %s: %d)',
+				$s['skipped_status'],
+				$label,
+				$s['skipped_restored']
+			)
+		);
+		WP_CLI::log( sprintf( '  Skipped, unsupported type:           %d', $s['skipped_unsupported_mime'] ) );
+		WP_CLI::log( sprintf( '  Skipped, file missing on disk:       %d', $s['skipped_file_missing'] ) );
+		WP_CLI::log( sprintf( '  Skipped, no usable records:          %d', $s['skipped_no_usable_rows'] ) );
+
+		WP_CLI::log( '' );
+		WP_CLI::log( 'Next-gen siblings:' );
+		WP_CLI::log(
+			sprintf(
+				'  WebP %s:                            %d',
+				$dry_run ? 'to link' : 'linked  ',
+				$s['webp_linked']
+			)
+		);
+		WP_CLI::log(
+			sprintf(
+				'  AVIF %s:                            %d',
+				$dry_run ? 'to link' : 'linked  ',
+				$s['avif_linked']
+			)
+		);
+		WP_CLI::log( sprintf( '  Already present (left alone):        %d', $s['webp_already_present'] + $s['avif_already_present'] ) );
+		WP_CLI::log( sprintf( '  Recorded but missing on disk:        %d', $s['webp_missing'] + $s['avif_missing'] ) );
+		WP_CLI::log( sprintf( '  Skipped, conversion was larger:      %d', $s['sentinel_skipped'] ) );
+		if ( $s['link_failed'] > 0 ) {
+			WP_CLI::log( sprintf( '  Could not be linked or copied:       %d', $s['link_failed'] ) );
+		}
+		WP_CLI::log( '' );
+
+		if ( $dry_run ) {
+			WP_CLI::success( 'Dry run complete — nothing was written.' );
+			return;
+		}
+
+		if ( $s['link_failed'] > 0 ) {
+			WP_CLI::warning(
+				sprintf(
+					'Imported %d attachment(s), but %d sibling file(s) could not be linked or copied. Those images keep their imported savings but will not be served in a next-gen format until re-optimized.',
+					$s['migrated'],
+					$s['link_failed']
+				)
+			);
+			return;
+		}
+
+		WP_CLI::success(
+			sprintf(
+				'Imported %d attachment(s) from %s. Linked %d WebP and %d AVIF sibling file(s).',
+				$s['migrated'],
+				$label,
+				$s['webp_linked'],
+				$s['avif_linked']
+			)
+		);
 	}
 }
