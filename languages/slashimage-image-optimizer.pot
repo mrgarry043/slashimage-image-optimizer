@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-07-26T14:30:17+00:00\n"
+"POT-Creation-Date: 2026-07-26T21:23:21+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: slashimage-image-optimizer\n"
@@ -30,7 +30,7 @@ msgstr ""
 #: includes/class-slash-image-admin.php:105
 #: includes/class-slash-image-admin.php:106
 #: includes/class-slash-image-dashboard-widget.php:29
-#: includes/class-slash-image-media-library.php:347
+#: includes/class-slash-image-media-library.php:349
 msgid "SlashImage"
 msgstr ""
 
@@ -40,7 +40,7 @@ msgid "https://slashimage.com"
 msgstr ""
 
 #: admin/views/attachment-meta-box.php:60
-#: includes/class-slash-image-media-library.php:384
+#: includes/class-slash-image-media-library.php:386
 msgid "Not processable"
 msgstr ""
 
@@ -69,7 +69,7 @@ msgstr ""
 
 #: admin/views/attachment-meta-box.php:94
 #: admin/views/attachment-meta-box.php:131
-#: includes/class-slash-image-media-library.php:832
+#: includes/class-slash-image-media-library.php:834
 msgid "Restore original"
 msgstr ""
 
@@ -80,7 +80,7 @@ msgstr ""
 #: admin/views/attachment-meta-box.php:140
 #: includes/class-slash-image-admin.php:204
 #: includes/class-slash-image-column.php:373
-#: includes/class-slash-image-media-library.php:382
+#: includes/class-slash-image-media-library.php:384
 msgid "Not optimized"
 msgstr ""
 
@@ -134,7 +134,7 @@ msgstr ""
 #: admin/views/bulk-page.php:277
 #: admin/views/settings-page.php:131
 #: includes/class-slash-image-admin.php:202
-#: includes/class-slash-image-media-library.php:378
+#: includes/class-slash-image-media-library.php:380
 msgid "Optimized"
 msgstr ""
 
@@ -277,8 +277,8 @@ msgid "Resume"
 msgstr ""
 
 #: admin/views/bulk-page.php:323
-#: admin/views/settings-page.php:652
-#: admin/views/settings-page.php:664
+#: admin/views/settings-page.php:678
+#: admin/views/settings-page.php:690
 msgid "Cancel"
 msgstr ""
 
@@ -406,440 +406,456 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
-#: admin/views/settings-page.php:199
+#: admin/views/settings-page.php:187
+msgid "Tools"
+msgstr ""
+
+#: admin/views/settings-page.php:202
 msgid "Compression"
 msgstr ""
 
-#: admin/views/settings-page.php:199
+#: admin/views/settings-page.php:202
 msgid "Balance of quality and file size for every optimization."
 msgstr ""
 
-#: admin/views/settings-page.php:203
-#: admin/views/settings-page.php:210
+#: admin/views/settings-page.php:206
+#: admin/views/settings-page.php:213
 msgid "Compression mode"
 msgstr ""
 
-#: admin/views/settings-page.php:205
+#: admin/views/settings-page.php:208
 msgid "Recommended"
 msgstr ""
 
-#: admin/views/settings-page.php:213
+#: admin/views/settings-page.php:216
 #: includes/class-slash-image-column.php:531
 msgid "Lossy"
 msgstr ""
 
-#: admin/views/settings-page.php:214
+#: admin/views/settings-page.php:217
 #: includes/class-slash-image-column.php:533
 msgid "Glossy"
 msgstr ""
 
-#: admin/views/settings-page.php:215
+#: admin/views/settings-page.php:218
 #: includes/class-slash-image-column.php:535
 msgid "Lossless"
 msgstr ""
 
-#: admin/views/settings-page.php:229
+#: admin/views/settings-page.php:232
 msgid "Auto-optimize on upload"
 msgstr ""
 
-#: admin/views/settings-page.php:230
+#: admin/views/settings-page.php:233
 msgid "Queue every new upload automatically; optimization runs in the background."
 msgstr ""
 
-#: admin/views/settings-page.php:246
+#: admin/views/settings-page.php:249
 msgid "Output Formats"
 msgstr ""
 
-#: admin/views/settings-page.php:246
+#: admin/views/settings-page.php:249
 msgid "Modern formats generated alongside the original."
 msgstr ""
 
-#: admin/views/settings-page.php:250
+#: admin/views/settings-page.php:253
 msgid "Generate WebP"
 msgstr ""
 
-#: admin/views/settings-page.php:250
+#: admin/views/settings-page.php:253
 msgid "Modern format with broad browser support."
 msgstr ""
 
-#: admin/views/settings-page.php:251
+#: admin/views/settings-page.php:254
 msgid "Generate AVIF"
 msgstr ""
 
-#: admin/views/settings-page.php:251
+#: admin/views/settings-page.php:254
 msgid "Newest format. Smallest files where supported."
 msgstr ""
 
-#: admin/views/settings-page.php:252
+#: admin/views/settings-page.php:255
 msgid "Convert PNG to JPEG"
 msgstr ""
 
-#: admin/views/settings-page.php:252
+#: admin/views/settings-page.php:255
 msgid "When the PNG has no transparency. Saves extra space."
 msgstr ""
 
-#: admin/views/settings-page.php:276
+#: admin/views/settings-page.php:279
 msgid "Frontend Serving"
 msgstr ""
 
-#: admin/views/settings-page.php:276
+#: admin/views/settings-page.php:279
 msgid "How modern formats are delivered to browsers."
 msgstr ""
 
-#: admin/views/settings-page.php:280
-#: admin/views/settings-page.php:284
+#: admin/views/settings-page.php:283
+#: admin/views/settings-page.php:287
 msgid "Delivery method"
 msgstr ""
 
-#: admin/views/settings-page.php:287
+#: admin/views/settings-page.php:290
 msgid "Picture tag"
 msgstr ""
 
-#: admin/views/settings-page.php:288
+#: admin/views/settings-page.php:291
 msgid "Server rewrite"
 msgstr ""
 
-#: admin/views/settings-page.php:289
+#: admin/views/settings-page.php:292
 msgid "None"
 msgstr ""
 
-#: admin/views/settings-page.php:304
+#: admin/views/settings-page.php:307
 msgid "Server rewrite doesn't work behind Cloudflare unless you're on Cloudflare Enterprise."
 msgstr ""
 
-#: admin/views/settings-page.php:305
+#: admin/views/settings-page.php:308
 msgid "Learn why"
 msgstr ""
 
-#: admin/views/settings-page.php:313
+#: admin/views/settings-page.php:316
 #: includes/class-slash-image-admin.php:316
 msgid "✓ Rewrite rules active in .htaccess"
 msgstr ""
 
-#: admin/views/settings-page.php:314
+#: admin/views/settings-page.php:317
 #: includes/class-slash-image-admin.php:315
 msgid "Remove rewrite rules"
 msgstr ""
 
-#: admin/views/settings-page.php:316
+#: admin/views/settings-page.php:319
 #: includes/class-slash-image-admin.php:314
 msgid "Apply rewrite rules to .htaccess"
 msgstr ""
 
-#: admin/views/settings-page.php:318
+#: admin/views/settings-page.php:321
 msgid "The .htaccess file is not writable. Check file permissions."
 msgstr ""
 
-#: admin/views/settings-page.php:325
+#: admin/views/settings-page.php:328
 #: includes/class-slash-image-admin.php:323
 msgid "Nginx requires manual server configuration. See the setup guide:"
 msgstr ""
 
-#: admin/views/settings-page.php:326
+#: admin/views/settings-page.php:329
 #: includes/class-slash-image-admin.php:324
 msgid "Open Nginx docs →"
 msgstr ""
 
-#: admin/views/settings-page.php:331
+#: admin/views/settings-page.php:334
 msgid "Server type could not be detected. Use the picture tag mode for reliable delivery."
 msgstr ""
 
-#: admin/views/settings-page.php:340
+#: admin/views/settings-page.php:343
 msgid "Resize"
 msgstr ""
 
-#: admin/views/settings-page.php:340
+#: admin/views/settings-page.php:343
 msgid "Scale very large images down on your server before they are optimized."
 msgstr ""
 
-#: admin/views/settings-page.php:344
+#: admin/views/settings-page.php:347
 msgid "Resize large images"
 msgstr ""
 
-#: admin/views/settings-page.php:345
+#: admin/views/settings-page.php:348
 msgid "Scale down images that are bigger than the size you set."
 msgstr ""
 
-#: admin/views/settings-page.php:359
+#: admin/views/settings-page.php:362
 msgid "Maximum dimensions"
 msgstr ""
 
-#: admin/views/settings-page.php:360
+#: admin/views/settings-page.php:363
 msgid "Images are only scaled down, never up. Set either dimension to 0 for no limit on that side. WordPress already scales uploads to 2560 px, so a value above 2560 has no effect."
 msgstr ""
 
-#: admin/views/settings-page.php:365
+#: admin/views/settings-page.php:368
 msgid "Max width"
 msgstr ""
 
-#: admin/views/settings-page.php:370
+#: admin/views/settings-page.php:373
 msgid "Max height"
 msgstr ""
 
-#: admin/views/settings-page.php:381
+#: admin/views/settings-page.php:384
 msgid "Backups"
 msgstr ""
 
-#: admin/views/settings-page.php:381
+#: admin/views/settings-page.php:384
 msgid "Keep originals so you can revert anytime."
 msgstr ""
 
-#: admin/views/settings-page.php:385
+#: admin/views/settings-page.php:388
 msgid "Keep backup of originals"
 msgstr ""
 
-#: admin/views/settings-page.php:402
+#: admin/views/settings-page.php:405
 msgid "Backup mode"
 msgstr ""
 
-#: admin/views/settings-page.php:403
+#: admin/views/settings-page.php:406
 msgid "Smart backup"
 msgstr ""
 
-#: admin/views/settings-page.php:404
+#: admin/views/settings-page.php:407
 msgid "Full backup"
 msgstr ""
 
-#: admin/views/settings-page.php:412
+#: admin/views/settings-page.php:415
 msgid "Auto-delete backups"
 msgstr ""
 
-#: admin/views/settings-page.php:413
+#: admin/views/settings-page.php:416
 msgid "Automatically delete original backups after a set number of days."
 msgstr ""
 
-#: admin/views/settings-page.php:427
+#: admin/views/settings-page.php:430
 msgid "Delete backups after"
 msgstr ""
 
-#: admin/views/settings-page.php:428
+#: admin/views/settings-page.php:431
 msgid "Delete backups older than this many days."
 msgstr ""
 
-#: admin/views/settings-page.php:432
+#: admin/views/settings-page.php:435
 msgid "Auto-delete backups after days"
 msgstr ""
 
-#: admin/views/settings-page.php:433
+#: admin/views/settings-page.php:436
 msgid "days"
 msgstr ""
 
-#: admin/views/settings-page.php:446
+#: admin/views/settings-page.php:449
 msgid "API Key"
 msgstr ""
 
-#: admin/views/settings-page.php:446
+#: admin/views/settings-page.php:449
 msgid "Connect your slashimage.com account."
 msgstr ""
 
-#: admin/views/settings-page.php:451
+#: admin/views/settings-page.php:454
 msgid "Connected API key"
 msgstr ""
 
-#: admin/views/settings-page.php:453
+#: admin/views/settings-page.php:456
 #: includes/class-slash-image-admin.php:263
 msgid "Disconnect"
 msgstr ""
 
-#: admin/views/settings-page.php:458
+#: admin/views/settings-page.php:461
 msgid "Your API key is no longer valid - it may have been revoked or regenerated. Reconnect to resume optimizing."
 msgstr ""
 
 #. translators: %s: masked fingerprint of the now-invalid key
-#: admin/views/settings-page.php:465
+#: admin/views/settings-page.php:468
 #, php-format
 msgid "Disconnected key: %s"
 msgstr ""
 
-#: admin/views/settings-page.php:475
+#: admin/views/settings-page.php:478
 msgid "Paste a valid API key to reconnect"
 msgstr ""
 
-#: admin/views/settings-page.php:475
+#: admin/views/settings-page.php:478
 msgid "Paste your API key to connect"
 msgstr ""
 
-#: admin/views/settings-page.php:477
+#: admin/views/settings-page.php:480
 msgid "Reconnect"
 msgstr ""
 
-#: admin/views/settings-page.php:477
+#: admin/views/settings-page.php:480
 #: includes/class-slash-image-admin.php:265
 msgid "Connect"
 msgstr ""
 
 #. translators: %s: link to slashimage.com
-#: admin/views/settings-page.php:485
+#: admin/views/settings-page.php:488
 #, php-format
 msgid "Don't have a key? %s"
 msgstr ""
 
-#: admin/views/settings-page.php:486
+#: admin/views/settings-page.php:489
 msgid "Get one free at slashimage.com →"
 msgstr ""
 
-#: admin/views/settings-page.php:497
+#: admin/views/settings-page.php:500
 msgid "Image Size Exclusions"
 msgstr ""
 
-#: admin/views/settings-page.php:497
+#: admin/views/settings-page.php:500
 msgid "Choose which image sizes to optimize, and skip files by keyword."
 msgstr ""
 
-#: admin/views/settings-page.php:499
+#: admin/views/settings-page.php:502
 msgid "Image sizes"
 msgstr ""
 
-#: admin/views/settings-page.php:500
+#: admin/views/settings-page.php:503
 msgid "Smaller sizes save fewer bytes — skip them to conserve credits."
 msgstr ""
 
 #. translators: %d: width
-#: admin/views/settings-page.php:514
+#: admin/views/settings-page.php:517
 #, php-format
 msgid "%d × auto"
 msgstr ""
 
 #. translators: %d: height
-#: admin/views/settings-page.php:517
+#: admin/views/settings-page.php:520
 #, php-format
 msgid "auto × %d"
 msgstr ""
 
-#: admin/views/settings-page.php:539
+#: admin/views/settings-page.php:542
 msgid "Custom exclusions"
 msgstr ""
 
-#: admin/views/settings-page.php:540
+#: admin/views/settings-page.php:543
 msgid "Skip files matching these keywords or patterns in their filename or URL."
 msgstr ""
 
 #. translators: %d: count of patterns
-#: admin/views/settings-page.php:545
+#: admin/views/settings-page.php:548
 #, php-format
 msgid "Currently excluding %d pattern."
 msgid_plural "Currently excluding %d patterns."
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin/views/settings-page.php:547
+#: admin/views/settings-page.php:550
 #: includes/class-slash-image-admin.php:335
 msgid "No custom patterns yet."
 msgstr ""
 
-#: admin/views/settings-page.php:553
+#: admin/views/settings-page.php:556
 msgid "Edit Exclusions"
 msgstr ""
 
-#: admin/views/settings-page.php:562
+#: admin/views/settings-page.php:565
 msgid "Danger Zone"
 msgstr ""
 
-#: admin/views/settings-page.php:562
+#: admin/views/settings-page.php:565
 msgid "Operations and power-user settings that change or destroy data."
 msgstr ""
 
-#: admin/views/settings-page.php:566
+#: admin/views/settings-page.php:569
 msgid "Remove all data when plugin is deleted"
 msgstr ""
 
-#: admin/views/settings-page.php:567
+#: admin/views/settings-page.php:570
 msgid "Off by default. Uninstalling SlashImage normally keeps your settings, stats, and per-attachment data so you can reinstall later without losing anything."
 msgstr ""
 
-#: admin/views/settings-page.php:568
+#: admin/views/settings-page.php:571
 msgid "When this is enabled, deleting the plugin permanently removes:"
 msgstr ""
 
-#: admin/views/settings-page.php:570
+#: admin/views/settings-page.php:573
 msgid "All SlashImage settings and preferences"
 msgstr ""
 
-#: admin/views/settings-page.php:571
+#: admin/views/settings-page.php:574
 msgid "Optimization stats and history"
 msgstr ""
 
-#: admin/views/settings-page.php:572
+#: admin/views/settings-page.php:575
 msgid "Per-attachment optimization data and backup index"
 msgstr ""
 
-#: admin/views/settings-page.php:573
+#: admin/views/settings-page.php:576
 msgid "The .htaccess rewrite block (when using server-rewrite mode)"
 msgstr ""
 
-#: admin/views/settings-page.php:575
+#: admin/views/settings-page.php:578
 msgid "Optimized images, WebP/AVIF variants, and original backups stay on disk. Disable this if you might reinstall SlashImage later."
 msgstr ""
 
-#: admin/views/settings-page.php:589
+#: admin/views/settings-page.php:592
 msgid "Restore all originals from backup"
 msgstr ""
 
-#: admin/views/settings-page.php:590
+#: admin/views/settings-page.php:593
 msgid "Reverts every optimized attachment that has a SlashImage backup. WebP and AVIF variants are removed."
 msgstr ""
 
-#: admin/views/settings-page.php:594
+#: admin/views/settings-page.php:597
 #: includes/class-slash-image-admin.php:256
 msgid "Restore all"
 msgstr ""
 
-#: admin/views/settings-page.php:600
+#: admin/views/settings-page.php:603
 #: includes/class-slash-image-admin.php:259
 msgid "Delete all backups"
 msgstr ""
 
-#: admin/views/settings-page.php:601
+#: admin/views/settings-page.php:604
 msgid "Permanent."
 msgstr ""
 
-#: admin/views/settings-page.php:601
+#: admin/views/settings-page.php:604
 msgid "Removes every file under uploads/slashimage-backups/ and clears the backup index. You will not be able to restore originals after this."
 msgstr ""
 
-#: admin/views/settings-page.php:605
+#: admin/views/settings-page.php:608
 msgid "Delete all"
 msgstr ""
 
 #. translators: %s: human time difference, e.g. "5 minutes"
-#: admin/views/settings-page.php:620
+#: admin/views/settings-page.php:623
 #: includes/class-slash-image-admin.php:305
 #, php-format
 msgid "Last saved %s ago"
 msgstr ""
 
-#: admin/views/settings-page.php:622
+#: admin/views/settings-page.php:625
 #: includes/class-slash-image-admin.php:306
 msgid "Not saved yet"
 msgstr ""
 
-#: admin/views/settings-page.php:627
+#: admin/views/settings-page.php:630
 msgid "Save & Bulk Optimize →"
 msgstr ""
 
-#: admin/views/settings-page.php:628
-#: admin/views/settings-page.php:653
+#: admin/views/settings-page.php:631
+#: admin/views/settings-page.php:679
 msgid "Save changes"
 msgstr ""
 
-#: admin/views/settings-page.php:638
+#: admin/views/settings-page.php:647
+msgid "Migrate from another optimizer"
+msgstr ""
+
+#: admin/views/settings-page.php:648
+msgid "Import optimization data from another plugin so its work counts as SlashImage's, and the WebP and AVIF files it created are served by SlashImage."
+msgstr ""
+
+#: admin/views/settings-page.php:653
+msgid "Checking for other optimizers…"
+msgstr ""
+
+#: admin/views/settings-page.php:664
 msgid "Image Exclusions"
 msgstr ""
 
-#: admin/views/settings-page.php:639
+#: admin/views/settings-page.php:665
 msgid "Close"
 msgstr ""
 
-#: admin/views/settings-page.php:642
+#: admin/views/settings-page.php:668
 msgid "Enter the name or keyword of images to exclude from optimization. One per line. Matches are case-insensitive substrings against the filename and URL path."
 msgstr ""
 
-#: admin/views/settings-page.php:643
+#: admin/views/settings-page.php:669
 msgid "Examples:"
 msgstr ""
 
 #. translators: %1$d: max patterns, %2$d: max chars per pattern
-#: admin/views/settings-page.php:647
+#: admin/views/settings-page.php:673
 #, php-format
 msgid "Up to %1$d patterns, %2$d characters each."
 msgstr ""
@@ -929,7 +945,7 @@ msgid "Restore the original for %d image? It replaces its optimized version as s
 msgstr ""
 
 #: includes/class-slash-image-admin.php:200
-#: includes/class-slash-image-media-library.php:379
+#: includes/class-slash-image-media-library.php:381
 msgid "Queued"
 msgstr ""
 
@@ -949,15 +965,15 @@ msgid "Couldn't start optimization, please try again."
 msgstr ""
 
 #: includes/class-slash-image-admin.php:206
-#: includes/class-slash-image-media-library.php:973
+#: includes/class-slash-image-media-library.php:1018
 msgid "Re-optimization could not be started."
 msgstr ""
 
 #: includes/class-slash-image-admin.php:207
 #: includes/class-slash-image-bulk-page.php:119
-#: includes/class-slash-image-media-library.php:160
-#: includes/class-slash-image-media-library.php:225
-#: includes/class-slash-image-media-library.php:971
+#: includes/class-slash-image-media-library.php:162
+#: includes/class-slash-image-media-library.php:227
+#: includes/class-slash-image-media-library.php:1016
 msgid "Add an API key to start optimizing."
 msgstr ""
 
@@ -1189,6 +1205,142 @@ msgstr ""
 msgid "Currently excluding: %d patterns"
 msgstr ""
 
+#: includes/class-slash-image-admin.php:357
+msgid "Detected"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:358
+msgid "Migrated"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:359
+msgid "Not detected"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:360
+msgid "No optimization data found."
+msgstr ""
+
+#: includes/class-slash-image-admin.php:361
+msgid "No other image optimizer was found on this site. Nothing to migrate."
+msgstr ""
+
+#. translators: %1$d: number of images. %2$s: source plugin name, e.g. "Imagify".
+#: includes/class-slash-image-admin.php:363
+#, php-format
+msgid "%1$d images with %2$s optimization data."
+msgstr ""
+
+#: includes/class-slash-image-admin.php:364
+msgid "Before you migrate"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:365
+msgid "Keep ShortPixel installed until this finishes. Afterwards uninstall it normally - do NOT use its \"Remove all data\" tool, which deletes the WebP and AVIF files SlashImage links to."
+msgstr ""
+
+#: includes/class-slash-image-admin.php:366
+msgid "Imagify's own uninstall leaves its optimization data and image files in place, so no special order is needed."
+msgstr ""
+
+#: includes/class-slash-image-admin.php:367
+msgid "Migrated images have no SlashImage backup, so Restore and forced re-optimize are not available for them."
+msgstr ""
+
+#: includes/class-slash-image-admin.php:368
+msgid "Scan"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:369
+msgid "Scan again"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:370
+msgid "Migrate now"
+msgstr ""
+
+#. translators: %1$d: number of images. %2$s: source plugin name. %3$s: date.
+#: includes/class-slash-image-admin.php:372
+#, php-format
+msgid "%1$d images migrated from %2$s on %3$s."
+msgstr ""
+
+#. translators: %1$d: images examined so far. %2$d: total images.
+#: includes/class-slash-image-admin.php:374
+#, php-format
+msgid "%1$d of %2$d examined"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:375
+msgid "That did not work. Please reload and try again."
+msgstr ""
+
+#: includes/class-slash-image-admin.php:376
+msgid "Importable"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:377
+msgid "Already migrated"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:378
+msgid "Already optimized by SlashImage"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:379
+msgid "Skipped - not importable"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:380
+msgid "- of which reverted"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:381
+msgid "- of which already small enough"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:382
+msgid "Skipped - unsupported type"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:383
+msgid "Skipped - file missing"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:384
+msgid "WebP files to serve"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:385
+msgid "AVIF files to serve"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:386
+msgid "Recorded but missing on disk"
+msgstr ""
+
+#. translators: %s: source plugin name, e.g. "ShortPixel".
+#: includes/class-slash-image-admin.php:388
+#, php-format
+msgid "Deactivate %s"
+msgstr ""
+
+#. translators: %s: source plugin name, e.g. "ShortPixel".
+#: includes/class-slash-image-admin.php:390
+#, php-format
+msgid "Deactivate %s now?"
+msgstr ""
+
+#: includes/class-slash-image-admin.php:391
+msgid "Two active optimizers both rewrite front-end markup, which can double-wrap images. Now that the data is imported, this plugin can be turned off."
+msgstr ""
+
+#. translators: %s: source plugin name, e.g. "Imagify".
+#: includes/class-slash-image-admin.php:393
+#, php-format
+msgid "%s deactivated. Its imported data stays with SlashImage."
+msgstr ""
+
 #: includes/class-slash-image-api-client.php:163
 #: includes/class-slash-image-api-client.php:264
 msgid "Refusing to send your API key: the optimization service URL is not HTTPS. Check the SLASH_IMAGE_API_BASE_URL setting."
@@ -1343,7 +1495,7 @@ msgstr ""
 
 #: includes/class-slash-image-column.php:95
 #: includes/class-slash-image-column.php:367
-#: includes/class-slash-image-media-library.php:502
+#: includes/class-slash-image-media-library.php:504
 msgid "Format not supported"
 msgstr ""
 
@@ -1431,7 +1583,7 @@ msgid "Paused - reconnect your API key"
 msgstr ""
 
 #: includes/class-slash-image-column.php:349
-#: includes/class-slash-image-media-library.php:381
+#: includes/class-slash-image-media-library.php:383
 msgid "Excluded"
 msgstr ""
 
@@ -1447,90 +1599,128 @@ msgstr ""
 msgid "Site returned HTTP %d after applying rules."
 msgstr ""
 
-#: includes/class-slash-image-media-library.php:377
+#: includes/class-slash-image-media-library.php:379
 msgid "All SlashImage statuses"
 msgstr ""
 
-#: includes/class-slash-image-media-library.php:380
+#: includes/class-slash-image-media-library.php:382
 msgid "Processing"
 msgstr ""
 
-#: includes/class-slash-image-media-library.php:383
+#: includes/class-slash-image-media-library.php:385
 msgid "Optimization error"
 msgstr ""
 
-#: includes/class-slash-image-media-library.php:387
+#: includes/class-slash-image-media-library.php:389
 msgid "Filter by SlashImage status"
 msgstr ""
 
-#: includes/class-slash-image-media-library.php:818
+#: includes/class-slash-image-media-library.php:820
 msgid "Re-optimize with SlashImage"
 msgstr ""
 
-#: includes/class-slash-image-media-library.php:819
-#: includes/class-slash-image-media-library.php:857
+#: includes/class-slash-image-media-library.php:821
+#: includes/class-slash-image-media-library.php:859
 msgid "Optimize with SlashImage"
 msgstr ""
 
-#: includes/class-slash-image-media-library.php:858
+#: includes/class-slash-image-media-library.php:860
 msgid "Restore originals"
 msgstr ""
 
-#: includes/class-slash-image-media-library.php:969
-#: includes/class-slash-image-media-library.php:1152
+#: includes/class-slash-image-media-library.php:1014
+#: includes/class-slash-image-media-library.php:1272
 msgid "Original backup not found. Restore the original file manually before re-optimizing."
 msgstr ""
 
-#: includes/class-slash-image-media-library.php:1094
-#: includes/class-slash-image-media-library.php:1169
+#: includes/class-slash-image-media-library.php:1139
+#: includes/class-slash-image-media-library.php:1289
 msgid "You do not have permission to do that."
 msgstr ""
 
 #. translators: %1$d: restored count, %2$d: failed count
-#: includes/class-slash-image-media-library.php:1136
+#: includes/class-slash-image-media-library.php:1185
 #, php-format
 msgid "Restored %1$d attachment(s). %2$d could not be restored."
 msgstr ""
 
 #. translators: %d: number of attachments restored
-#: includes/class-slash-image-media-library.php:1139
+#: includes/class-slash-image-media-library.php:1188
 #, php-format
 msgid "Restored %d attachment."
 msgid_plural "Restored %d attachments."
 msgstr[0] ""
 msgstr[1] ""
 
+#. translators: %d: number of images the user selected
+#: includes/class-slash-image-media-library.php:1203
+#, php-format
+msgid "%d selected image was migrated from another optimizer, so SlashImage has no original to restore."
+msgid_plural "None of the %d selected images has a backup to restore - they were migrated from another optimizer, so SlashImage has no originals for them."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: number of images the user selected
+#: includes/class-slash-image-media-library.php:1214
+#, php-format
+msgid "%d selected image has no backup to restore."
+msgid_plural "None of the %d selected images has a backup to restore."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %1$d: number queued for restore, %2$d: number the user selected
+#: includes/class-slash-image-media-library.php:1233
+#, php-format
+msgid "Queued %1$d of %2$d selected images for restore."
+msgstr ""
+
+#. translators: %d: number of images skipped
+#: includes/class-slash-image-media-library.php:1241
+#, php-format
+msgid "%d was migrated from another optimizer and has no original to restore."
+msgid_plural "%d were migrated from another optimizer and have no originals to restore."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: number of images skipped
+#: includes/class-slash-image-media-library.php:1252
+#, php-format
+msgid "%d has no backup and was skipped."
+msgid_plural "%d have no backup and were skipped."
+msgstr[0] ""
+msgstr[1] ""
+
 #. translators: %d: number of attachments queued for restore
-#: includes/class-slash-image-media-library.php:1145
+#: includes/class-slash-image-media-library.php:1265
 #, php-format
 msgid "Queued %d image for restore. It will appear restored as soon as it finishes."
 msgid_plural "Queued %d images for restore. They will appear restored as each one finishes."
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/class-slash-image-media-library.php:1148
+#: includes/class-slash-image-media-library.php:1268
 msgid "Original restored — queued for re-optimization."
 msgstr ""
 
-#: includes/class-slash-image-media-library.php:1156
+#: includes/class-slash-image-media-library.php:1276
 msgid "Re-optimization failed. Check the Media Library status column for details."
 msgstr ""
 
-#: includes/class-slash-image-media-library.php:1160
+#: includes/class-slash-image-media-library.php:1280
 msgid "Restore failed. The backup may be missing or unwritable."
 msgstr ""
 
 #. translators: %d: number of attachments selected
-#: includes/class-slash-image-media-library.php:1165
+#: includes/class-slash-image-media-library.php:1285
 #, php-format
 msgid "Cannot restore %d attachments at once. Please select fewer than 500, or use Media → SlashImage → Restore all."
 msgstr ""
 
-#: includes/class-slash-image-media-library.php:1173
+#: includes/class-slash-image-media-library.php:1293
 msgid "That attachment could not be found."
 msgstr ""
 
-#: includes/class-slash-image-media-library.php:1196
+#: includes/class-slash-image-media-library.php:1319
 msgid "SlashImage Status"
 msgstr ""
 
