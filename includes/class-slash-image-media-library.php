@@ -1168,6 +1168,10 @@ class Slash_Image_Media_Library {
 		$code  = sanitize_key( wp_unslash( $_GET[ self::NOTICE_QUERY_VAR ] ) );
 		$count = isset( $_GET[ self::NOTICE_COUNT_VAR ] ) ? (int) $_GET[ self::NOTICE_COUNT_VAR ] : 0;
 		$fail  = isset( $_GET['slash_image_failed'] ) ? (int) $_GET['slash_image_failed'] : 0;
+		// Bulk-restore outcome detail: how many were dropped, and (only when they
+		// all share it) why. Both display-only, like the args above.
+		$skipped = isset( $_GET[ self::NOTICE_SKIPPED_VAR ] ) ? (int) $_GET[ self::NOTICE_SKIPPED_VAR ] : 0;
+		$cause   = isset( $_GET[ self::NOTICE_CAUSE_VAR ] ) ? sanitize_key( wp_unslash( $_GET[ self::NOTICE_CAUSE_VAR ] ) ) : '';
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		$kind = 'success';
@@ -1186,6 +1190,77 @@ class Slash_Image_Media_Library {
 				$msg .= ' ' . Slash_Image_Admin::cache_purge_reminder( 'restore' );
 				break;
 			case 'restore_queued':
+				$selected = $count + $skipped;
+
+				if ( 0 === $count ) {
+					// Nothing could be restored. Never success-toned: the user
+					// asked for something that did not happen, and a green
+					// "Queued 0" reads as if it worked.
+					$kind = 'warning';
+					if ( 'migrated' === $cause ) {
+						$msg = sprintf(
+							/* translators: %d: number of images the user selected */
+							_n(
+								'%d selected image was migrated from another optimizer, so SlashImage has no original to restore.',
+								'None of the %d selected images has a backup to restore - they were migrated from another optimizer, so SlashImage has no originals for them.',
+								$selected,
+								'slashimage-image-optimizer'
+							),
+							$selected
+						);
+					} else {
+						$msg = sprintf(
+							/* translators: %d: number of images the user selected */
+							_n(
+								'%d selected image has no backup to restore.',
+								'None of the %d selected images has a backup to restore.',
+								$selected,
+								'slashimage-image-optimizer'
+							),
+							$selected
+						);
+					}
+					break;
+				}
+
+				if ( $skipped > 0 ) {
+					// Partial success. Warning-toned so the dropped images are not
+					// mistaken for done. Built as two sentences because each
+					// clause pluralises on a different number.
+					$kind = 'warning';
+					$msg  = sprintf(
+						/* translators: %1$d: number queued for restore, %2$d: number the user selected */
+						__( 'Queued %1$d of %2$d selected images for restore.', 'slashimage-image-optimizer' ),
+						$count,
+						$selected
+					);
+					$msg .= ' ';
+					if ( 'migrated' === $cause ) {
+						$msg .= sprintf(
+							/* translators: %d: number of images skipped */
+							_n(
+								'%d was migrated from another optimizer and has no original to restore.',
+								'%d were migrated from another optimizer and have no originals to restore.',
+								$skipped,
+								'slashimage-image-optimizer'
+							),
+							$skipped
+						);
+					} else {
+						$msg .= sprintf(
+							/* translators: %d: number of images skipped */
+							_n(
+								'%d has no backup and was skipped.',
+								'%d have no backup and were skipped.',
+								$skipped,
+								'slashimage-image-optimizer'
+							),
+							$skipped
+						);
+					}
+					break;
+				}
+
 				/* translators: %d: number of attachments queued for restore */
 				$msg = sprintf( _n( 'Queued %d image for restore. It will appear restored as soon as it finishes.', 'Queued %d images for restore. They will appear restored as each one finishes.', $count, 'slashimage-image-optimizer' ), $count );
 				break;
