@@ -267,6 +267,30 @@
 		loop( source, action );
 	}
 
+	/**
+	 * Confirm a deactivation on the card, then remove it — cards render only for
+	 * ACTIVE plugins, so this one no longer qualifies. Falls back to the empty
+	 * state when it was the last card.
+	 */
+	function retireCard( source, label ) {
+		var el = root.querySelector( '.slash-image-tools__card[data-source="' + source + '"]' );
+		cards = cards.filter( function ( c ) { return c.source !== source; } );
+		delete runs[ source ];
+
+		if ( ! el ) { render(); return; }
+
+		el.innerHTML = '<p class="slash-image-tools__deactivated">' +
+			esc( ( t( 'deactivated', '%s deactivated. Its imported data stays with SlashImage.' ) ).replace( '%s', label ) ) +
+			'</p>';
+		el.classList.add( 'is-retiring' );
+
+		window.setTimeout( function () {
+			// Re-render from the trimmed card list, which also restores the empty
+			// state if nothing is left.
+			render();
+		}, 2200 );
+	}
+
 	/* ── Wiring ─────────────────────────────────────── */
 
 	function load() {
@@ -300,7 +324,12 @@
 				if ( ! window.confirm( ( t( 'confirm_deactivate', 'Deactivate %s now?' ) ).replace( '%s', c ? c.label : source ) ) ) { return; }
 				btn.disabled = true;
 				post( 'slash_image_migrate_deactivate', { source: source } ).then( function ( res ) {
-					if ( res.ok ) { window.location.reload(); } else { btn.disabled = false; }
+					if ( ! res.ok ) { btn.disabled = false; return; }
+					// The card is about to stop qualifying for display (cards are
+					// active-plugins-only), so retire it here rather than leaving a
+					// dead card behind or forcing a full page reload. Brief
+					// confirmation first, so the action does not just vanish.
+					retireCard( source, c ? c.label : source );
 				} );
 			}
 		} );

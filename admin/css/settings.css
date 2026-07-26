@@ -888,3 +888,19 @@ p.slash-image-keyfield__deadkey { font-size: 12.5px; color: var(--si-muted); mar
 	background: var(--slash-primary, #4438ca);
 	transition: width .2s ease;
 }
+
+/* The save bar is shared chrome inside the settings <form>, so it renders
+   regardless of which tab is showing. Tools has nothing savable — hide it
+   there declaratively, keyed off the active tab published on the app root by
+   activateTab(), rather than having each tab toggle controls it does not own. */
+.slash-image-app[data-active-tab="tools"] .slash-image-footer { display: none; }
+
+.slash-image-tools__card.is-retiring {
+	opacity: .55;
+	transition: opacity .3s ease;
+}
+.slash-image-tools__deactivated {
+	margin: 0;
+	font-size: 13px;
+	color: var(--slash-text-muted, #646970);
+}

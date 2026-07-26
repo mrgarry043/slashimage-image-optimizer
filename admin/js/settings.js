@@ -68,6 +68,11 @@
 		qsa( '.slash-image-tab-panel' ).forEach( function ( panel ) {
 			panel.classList.toggle( 'is-active', panel.dataset.tabPanel === name );
 		} );
+		// Publish the active tab on the app root so chrome shared across panels
+		// (the save bar) can opt out declaratively in CSS, rather than each tab
+		// having to know which controls to hide.
+		var app = document.querySelector( '.slash-image-app' );
+		if ( app ) { app.dataset.activeTab = name; }
 		if ( window.location.hash !== '#' + name ) {
 			history.replaceState( null, '', '#' + name );
 		}

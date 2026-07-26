@@ -106,6 +106,16 @@ class Slash_Image_Tools_Page {
 		$cards    = array();
 
 		foreach ( Slash_Image_Migrate::adapters() as $slug => $adapter ) {
+			// Card visibility is decided by the plugin being ACTIVE, not by the
+			// presence of its data: an inactive plugin's leftover records are
+			// not something to offer a browser user, and a card for a plugin
+			// they cannot see in their admin would be confusing. Orphaned data
+			// stays importable through the CLI.
+			$plugin_file = $this->active_plugin_file( $slug );
+			if ( '' === $plugin_file ) {
+				continue;
+			}
+
 			$detect = call_user_func( array( $adapter, 'detect' ) );
 			$done   = isset( $migrated[ $slug ] ) ? $migrated[ $slug ] : null;
 
@@ -120,7 +130,7 @@ class Slash_Image_Tools_Page {
 				'migrated_at' => $done && $done['last_at'] > 0
 					? date_i18n( get_option( 'date_format' ), (int) $done['last_at'] )
 					: '',
-				'plugin_file' => $this->active_plugin_file( $slug ),
+				'plugin_file' => $plugin_file,
 			);
 		}
 
@@ -218,24 +228,48 @@ class Slash_Image_Tools_Page {
 	}
 
 	/**
-	 * The active plugin file for a migration source, or '' when that plugin is
-	 * not active. Used to decide whether the done-state card may offer to
-	 * deactivate it.
+	 * Identifying patterns for each migration source's plugin.
 	 *
-	 * Matched on the known main-file paths rather than a directory scan: this
-	 * runs on the Tools screen only, and an exact match avoids deactivating
-	 * something merely similarly named.
+	 * A single hardcoded '{dir}/{file}.php' is too brittle: an install can be
+	 * renamed, and the folder differs between wordpress.org and a manual or
+	 * bundled copy. Matching on EITHER the directory or the main-file name
+	 * survives one of the two being renamed. Both renamed is not detectable
+	 * without loading the plugin's own code, which we will not do — the CLI
+	 * remains the escape hatch for such an install.
+	 *
+	 * @return array slug => [ 'dirs' => string[], 'files' => string[] ]
+	 */
+	private static function plugin_patterns() {
+		return array(
+			'shortpixel' => array(
+				'dirs'  => array( 'shortpixel-image-optimiser' ),
+				'files' => array( 'wp-shortpixel.php' ),
+			),
+			'imagify'    => array(
+				'dirs'  => array( 'imagify' ),
+				'files' => array( 'imagify.php' ),
+			),
+		);
+	}
+
+	/**
+	 * The active plugin file for a migration source, or '' when that plugin is
+	 * not currently active.
+	 *
+	 * Drives BOTH card visibility (a source with no active plugin gets no card,
+	 * however much leftover data it has) and whether the done-state card may
+	 * offer to deactivate it.
+	 *
+	 * Note this deliberately does NOT gate the CLI, which works against the
+	 * database regardless of active state — the documented way to import
+	 * orphaned data after its plugin is gone.
 	 *
 	 * @param string $slug Adapter slug.
 	 * @return string Plugin file relative to the plugins dir, or ''.
 	 */
 	private function active_plugin_file( $slug ) {
-		$known = array(
-			'shortpixel' => 'shortpixel-image-optimiser/wp-shortpixel.php',
-			'imagify'    => 'imagify/imagify.php',
-		);
-
-		if ( ! isset( $known[ $slug ] ) ) {
+		$patterns = self::plugin_patterns();
+		if ( ! isset( $patterns[ $slug ] ) ) {
 			return '';
 		}
 
@@ -243,6 +277,21 @@ class Slash_Image_Tools_Page {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
 
-		return is_plugin_active( $known[ $slug ] ) ? $known[ $slug ] : '';
+		$dirs  = $patterns[ $slug ]['dirs'];
+		$files = $patterns[ $slug ]['files'];
+
+		foreach ( (array) get_option( 'active_plugins', array() ) as $plugin_file ) {
+			$plugin_file = (string) $plugin_file;
+			$dir         = dirname( $plugin_file );
+			$file        = basename( $plugin_file );
+
+			if ( in_array( $dir, $dirs, true ) || in_array( $file, $files, true ) ) {
+				// Re-check through the API so a plugin listed in the option but
+				// since disabled (or filtered out) is never treated as active.
+				return is_plugin_active( $plugin_file ) ? $plugin_file : '';
+			}
+		}
+
+		return '';
 	}
 }

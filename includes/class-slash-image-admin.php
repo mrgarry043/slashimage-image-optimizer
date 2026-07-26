@@ -389,6 +389,8 @@ class Slash_Image_Admin {
 					/* translators: %s: source plugin name, e.g. "ShortPixel". */
 					'confirm_deactivate'        => __( 'Deactivate %s now?', 'slashimage-image-optimizer' ),
 					'note_deactivate'           => __( 'Two active optimizers both rewrite front-end markup, which can double-wrap images. Now that the data is imported, this plugin can be turned off.', 'slashimage-image-optimizer' ),
+					/* translators: %s: source plugin name, e.g. "Imagify". */
+					'deactivated'               => __( '%s deactivated. Its imported data stays with SlashImage.', 'slashimage-image-optimizer' ),
 				),
 			)
 		);
