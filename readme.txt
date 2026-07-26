@@ -4,7 +4,7 @@ Tags: image-optimization, compress-images, webp, avif, optimize-images
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -140,6 +140,9 @@ For general bugs, please open a thread on the plugin support forum. For security
 6. Attachment edit screen showing the SlashImage meta box with optimization details.
 
 == Changelog ==
+
+= 1.1.1 =
+* Fix: "Re-optimize already optimized" (Bulk Optimize) and `wp slashimage optimize --force` now work. The original is restored from its backup first, then re-optimized, so images are never compressed twice. Images with no backup are skipped and reported.
 
 = 1.1.0 =
 * New: WP-CLI support — manage optimization from the command line with `wp slashimage status`, `optimize [<ids>|--all] [--force]`, `restore [<ids>|--all] [--yes]`, and `cancel`. Useful for large libraries and hosts where WP-Cron is disabled.
