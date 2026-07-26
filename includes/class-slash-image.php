@@ -83,6 +83,10 @@ final class Slash_Image {
 			new Slash_Image_Bulk_Page();
 			new Slash_Image_Media_Library();
 			new Slash_Image_Dashboard_Widget();
+			// Registers three AJAX handlers only. The Tools panel renders no
+			// server-side body, so nothing here queries until a user opens the
+			// tab — and the migration classes stay unloaded until then.
+			new Slash_Image_Tools_Page();
 		}
 
 		Slash_Image_Restore::schedule_cleanup();
