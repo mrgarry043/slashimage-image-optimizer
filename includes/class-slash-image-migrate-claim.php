@@ -81,20 +81,52 @@ class Slash_Image_Migrate_Claim {
 			return $none;
 		}
 
-		$their_file = $dir . $basename;
+		return self::claim_at( $dir . $basename, $source_file . '.' . $format, $format, $dry_run );
+	}
 
-		// The database records what was written, not what survived. Verify.
-		if ( ! is_readable( $their_file ) ) {
-			$none['stats'] = array( $format . '_missing' => 1 );
-			return $none;
-		}
-
-		$bytes  = (int) filesize( $their_file );
+	/**
+	 * Evaluate one format for a source whose sibling name is DERIVED by the same
+	 * rule we probe, rather than recorded.
+	 *
+	 * Imagify's imagify_path_to_nextgen() appends to the full path including
+	 * extension (photo.jpg -> photo.jpg.webp) — byte-identical to what
+	 * Slash_Image_Variant_Resolver looks for. So there is nothing to link: the
+	 * file either already sits at our probe name or was never generated. The
+	 * shared claim_at() handles both, which is why this reports through the same
+	 * counters instead of a parallel vocabulary.
+	 *
+	 * Deliberately NOT expressed by faking a recorded-basename array for
+	 * evaluate(): that would report a link where none was needed and put a
+	 * fiction in the stats.
+	 *
+	 * @param string $format      'webp' or 'avif'.
+	 * @param string $source_file Absolute path of the live file for this size.
+	 * @param bool   $dry_run     Scan only.
+	 * @return array Same shape as evaluate().
+	 */
+	public static function evaluate_derived( $format, $source_file, $dry_run = false ) {
 		$target = $source_file . '.' . $format;
+		return self::claim_at( $target, $target, $format, $dry_run );
+	}
 
-		// Already probeable — either we linked it on an earlier run, or the site
-		// runs ShortPixel's double-extension mode and their own file is already
-		// at the name we probe. Either way, nothing to do; never overwrite.
+	/**
+	 * Shared resolution for both entry points.
+	 *
+	 * Order matters: an existing target is reported as already-present BEFORE
+	 * the source file is examined, because once the variant sits at the name we
+	 * probe it is servable regardless of what became of the file it came from —
+	 * and because we must never overwrite it.
+	 *
+	 * For a derived-name source $their_file and $target are the same path, so
+	 * this collapses to "present, or never generated" with no link step.
+	 *
+	 * @param string $their_file Existing sibling belonging to the other plugin.
+	 * @param string $target     Double-extension path our rewriter probes.
+	 * @param string $format     'webp' or 'avif'.
+	 * @param bool   $dry_run    Scan only.
+	 * @return array
+	 */
+	private static function claim_at( $their_file, $target, $format, $dry_run ) {
 		if ( file_exists( $target ) ) {
 			return array(
 				'bytes'       => (int) filesize( $target ),
@@ -102,6 +134,17 @@ class Slash_Image_Migrate_Claim {
 				'stats'       => array( $format . '_already_present' => 1 ),
 			);
 		}
+
+		// The database records what was written, not what survived. Verify.
+		if ( ! is_readable( $their_file ) ) {
+			return array(
+				'bytes'       => 0,
+				'link_target' => '',
+				'stats'       => array( $format . '_missing' => 1 ),
+			);
+		}
+
+		$bytes = (int) filesize( $their_file );
 
 		if ( $dry_run ) {
 			// Report what a real run would link, without touching the filesystem.
