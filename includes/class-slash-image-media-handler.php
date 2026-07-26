@@ -683,6 +683,18 @@ class Slash_Image_Media_Handler {
 			// One-shot override consumed — clear it so later runs use the global mode.
 			delete_post_meta( $attachment_id, self::META_MODE_OVERRIDE_KEY );
 
+			// Migration provenance is retired the moment WE genuinely optimize the
+			// image: these bytes are now ours, not the imported optimizer's.
+			// Leaving it would make migrated_summary() overcount that source,
+			// is_optimized_by_us() report false for an image we just optimized,
+			// and any later savings segmentation credit the wrong service.
+			//
+			// Only on this path. The already-optimized early return and every
+			// failure path leave provenance alone, because in those cases the
+			// imported state is still what the attachment carries.
+			delete_post_meta( $attachment_id, Slash_Image_Migrate::META_MIGRATED_FROM );
+			delete_post_meta( $attachment_id, Slash_Image_Migrate::META_MIGRATED_AT );
+
 			// Live credits: patch the local plan cache with this image's latest
 			// X-Images-Remaining (no API call, one write per image). A no-op when
 			// no plan is cached yet — the daily sync / next key-save populates it.
