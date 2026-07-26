@@ -851,6 +851,13 @@ class Slash_Image_Worker {
 				'source_cursor'      => 0,
 				'source_done'        => false,
 				'force_redo'         => false,
+				// Distinct from force_redo. force_redo widens the FEED (the
+				// source-query anti-join and start_with_ids()'s pre-filter) and
+				// is also set by retry_failed() to mark a retry run.
+				// force_reoptimize is the narrower "re-optimize images that are
+				// already optimized" intent, honoured by the worker, and is set
+				// by start()/start_with_ids() only.
+				'force_reoptimize'   => false,
 				'total_target'       => null,
 				'deferred_in_flight' => 0,
 				'last_tick_at'       => null,

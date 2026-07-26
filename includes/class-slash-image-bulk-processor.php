@@ -71,11 +71,12 @@ class Slash_Image_Bulk_Processor {
 		$session['status']        = $total > 0 ? 'running' : 'completed';
 		$session['started_at']    = time();
 		$session['finished_at']   = $total > 0 ? null : time();
-		$session['source_cursor'] = 0;
-		$session['source_done']   = false;
-		$session['force_redo']    = $force_redo;
-		$session['total_target']  = $total;
-		$session['last_tick_at']  = time();
+		$session['source_cursor']    = 0;
+		$session['source_done']      = false;
+		$session['force_redo']       = $force_redo;
+		$session['force_reoptimize'] = $force_redo;
+		$session['total_target']     = $total;
+		$session['last_tick_at']     = time();
 		Slash_Image_Worker::save_session( $session );
 
 		// $schedule=false lets an in-process driver (e.g. WP-CLI) own the drain
@@ -113,6 +114,10 @@ class Slash_Image_Bulk_Processor {
 		$session['source_cursor']      = 0;
 		$session['source_done']        = false;
 		$session['force_redo']         = false;
+		// A restore run is never forced. Cleared explicitly (not left to the
+		// get_session() default) so a preceding forced optimize run's flag
+		// cannot survive in the stored option.
+		$session['force_reoptimize']   = false;
 		$session['total_target']       = $total;
 		$session['deferred_in_flight'] = 0;
 		$session['last_tick_at']        = time();
@@ -214,11 +219,12 @@ class Slash_Image_Bulk_Processor {
 		$session['status']        = $total > 0 ? 'running' : 'idle';
 		$session['started_at']    = time();
 		$session['finished_at']   = $total > 0 ? null : time();
-		$session['source_cursor'] = 0;
-		$session['source_done']   = true; // IDs supplied — no source pagination needed.
-		$session['force_redo']    = $force_redo;
-		$session['total_target']  = $total;
-		$session['last_tick_at']  = time();
+		$session['source_cursor']    = 0;
+		$session['source_done']      = true; // IDs supplied — no source pagination needed.
+		$session['force_redo']       = $force_redo;
+		$session['force_reoptimize'] = $force_redo;
+		$session['total_target']     = $total;
+		$session['last_tick_at']     = time();
 		Slash_Image_Worker::save_session( $session );
 
 		// $schedule=false lets an in-process driver (e.g. WP-CLI) own the drain
@@ -328,8 +334,12 @@ class Slash_Image_Bulk_Processor {
 		$session['source_cursor'] = 0;
 		$session['source_done']   = true; // Reset rows already exist; no source pagination.
 		$session['force_redo']    = true;
-		$session['total_target']  = $count;
-		$session['last_tick_at']  = time();
+		// NOT a forced re-optimize: retrying a failed row must not restore-then-
+		// reoptimize it. Cleared explicitly so a preceding forced run's flag
+		// cannot survive in the stored option and silently widen this run.
+		$session['force_reoptimize'] = false;
+		$session['total_target']     = $count;
+		$session['last_tick_at']     = time();
 		Slash_Image_Worker::save_session( $session );
 
 		Slash_Image_Worker::schedule_cron();
