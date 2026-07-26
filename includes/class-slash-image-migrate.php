@@ -151,7 +151,115 @@ class Slash_Image_Migrate {
 	}
 
 	/**
+	 * Resolve a slug to a usable adapter, applying the global refusals and the
+	 * source's own detection. Shared by run() and run_batch() so a refusal reads
+	 * identically whichever drives it.
+	 *
+	 * @param string $slug Adapter slug.
+	 * @return array ['ok' => bool, 'code' => string, 'message' => string, 'adapter' => string]
+	 */
+	public static function resolve( $slug ) {
+		$fail = function ( $code, $message ) {
+			return array(
+				'ok'      => false,
+				'code'    => $code,
+				'message' => $message,
+				'adapter' => '',
+			);
+		};
+
+		$pre = self::preflight();
+		if ( empty( $pre['ok'] ) ) {
+			return $fail( $pre['code'], $pre['message'] );
+		}
+
+		$adapter = self::adapter_for( $slug );
+		if ( '' === $adapter ) {
+			return $fail(
+				'unknown_source',
+				sprintf( 'Unknown migration source "%s". Available: %s.', $slug, implode( ', ', array_keys( self::adapters() ) ) )
+			);
+		}
+
+		$detect = call_user_func( array( $adapter, 'detect' ) );
+		if ( empty( $detect['ok'] ) ) {
+			return $fail(
+				(string) ( $detect['code'] ?? 'undetected' ),
+				(string) ( $detect['message'] ?? '' )
+			);
+		}
+
+		return array(
+			'ok'      => true,
+			'code'    => '',
+			'message' => '',
+			'adapter' => $adapter,
+		);
+	}
+
+	/**
+	 * Run exactly ONE batch and return where it stopped.
+	 *
+	 * The entry point for request-per-batch drivers (the Tools screen): a single
+	 * browser request does one bounded slice of work and hands the cursor back,
+	 * so no request can approach a proxy timeout however large the library is.
+	 *
+	 * The CALLER owns the cursor here — this deliberately does not read or write
+	 * CURSOR_OPTION. The browser threads the cursor through its own request
+	 * chain, and persisting it would let two concurrent drivers (a CLI run and
+	 * an open Tools tab) overwrite each other's position.
+	 *
+	 * @param string $slug    Adapter slug.
+	 * @param int    $cursor  Exclusive attachment-ID cursor; 0 starts at the beginning.
+	 * @param bool   $dry_run Scan only; write nothing.
+	 * @param int    $batch   Attachments to examine in this batch.
+	 * @return array ['ok','code','message','cursor','done','stats']
+	 */
+	public static function run_batch( $slug, $cursor = 0, $dry_run = false, $batch = self::DEFAULT_BATCH_SIZE ) {
+		$resolved = self::resolve( $slug );
+		if ( empty( $resolved['ok'] ) ) {
+			return array(
+				'ok'      => false,
+				'code'    => $resolved['code'],
+				'message' => $resolved['message'],
+				'cursor'  => (int) $cursor,
+				'done'    => true,
+				'stats'   => self::stat_keys(),
+			);
+		}
+
+		$result = call_user_func(
+			array( $resolved['adapter'], 'migrate_batch' ),
+			(int) $cursor,
+			max( 1, (int) $batch ),
+			(bool) $dry_run
+		);
+
+		$stats = self::stat_keys();
+		foreach ( $stats as $key => $unused ) {
+			if ( isset( $result['stats'][ $key ] ) ) {
+				$stats[ $key ] = (int) $result['stats'][ $key ];
+			}
+		}
+
+		self::flush_object_cache();
+
+		return array(
+			'ok'      => true,
+			'code'    => '',
+			'message' => '',
+			'cursor'  => (int) ( $result['cursor'] ?? $cursor ),
+			'done'    => ! empty( $result['done'] ),
+			'stats'   => $stats,
+		);
+	}
+
+	/**
 	 * Run a migration to completion, batching by attachment ID.
+	 *
+	 * Built on run_batch() so the two drivers cannot drift. Unlike run_batch(),
+	 * this OWNS the cursor option: a killed CLI run resumes where it stopped,
+	 * and the option is deleted on completion.
 	 *
 	 * @param string        $slug      Adapter slug.
 	 * @param bool          $dry_run   Scan only; write nothing.
@@ -163,32 +271,14 @@ class Slash_Image_Migrate {
 	public static function run( $slug, $dry_run = false, $batch = self::DEFAULT_BATCH_SIZE, $on_batch = null ) {
 		$stats = self::stat_keys();
 
-		$pre = self::preflight();
-		if ( empty( $pre['ok'] ) ) {
+		// Resolve once up front rather than per batch: detect() costs a COUNT
+		// query, and a long run would otherwise repeat it for every batch.
+		$resolved = self::resolve( $slug );
+		if ( empty( $resolved['ok'] ) ) {
 			return array(
 				'ok'      => false,
-				'code'    => $pre['code'],
-				'message' => $pre['message'],
-				'stats'   => $stats,
-			);
-		}
-
-		$adapter = self::adapter_for( $slug );
-		if ( '' === $adapter ) {
-			return array(
-				'ok'      => false,
-				'code'    => 'unknown_source',
-				'message' => sprintf( 'Unknown migration source "%s". Available: %s.', $slug, implode( ', ', array_keys( self::adapters() ) ) ),
-				'stats'   => $stats,
-			);
-		}
-
-		$detect = call_user_func( array( $adapter, 'detect' ) );
-		if ( empty( $detect['ok'] ) ) {
-			return array(
-				'ok'      => false,
-				'code'    => (string) ( $detect['code'] ?? 'undetected' ),
-				'message' => (string) ( $detect['message'] ?? '' ),
+				'code'    => $resolved['code'],
+				'message' => $resolved['message'],
 				'stats'   => $stats,
 			);
 		}
@@ -200,7 +290,7 @@ class Slash_Image_Migrate {
 		$cursor = $dry_run ? 0 : (int) get_option( self::CURSOR_OPTION, 0 );
 
 		while ( true ) {
-			$result = call_user_func( array( $adapter, 'migrate_batch' ), $cursor, $batch, $dry_run );
+			$result = call_user_func( array( $resolved['adapter'], 'migrate_batch' ), $cursor, $batch, $dry_run );
 
 			foreach ( $stats as $key => $unused ) {
 				if ( isset( $result['stats'][ $key ] ) ) {
@@ -237,6 +327,42 @@ class Slash_Image_Migrate {
 			'message' => '',
 			'stats'   => $stats,
 		);
+	}
+
+	/**
+	 * Per-source done-state, derived from the provenance meta rather than from
+	 * anything a client reports: count of attachments migrated from each source
+	 * and when the most recent one was migrated.
+	 *
+	 * @return array slug => ['count' => int, 'last_at' => int]
+	 */
+	public static function migrated_summary() {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT pm.meta_value AS source, COUNT(*) AS total,
+				        COALESCE( MAX( CAST( at.meta_value AS UNSIGNED ) ), 0 ) AS last_at
+				   FROM {$wpdb->postmeta} pm
+				   LEFT JOIN {$wpdb->postmeta} at
+				          ON at.post_id = pm.post_id AND at.meta_key = %s
+				  WHERE pm.meta_key = %s
+				  GROUP BY pm.meta_value",
+				self::META_MIGRATED_AT,
+				self::META_MIGRATED_FROM
+			),
+			ARRAY_A
+		);
+
+		$out = array();
+		foreach ( (array) $rows as $row ) {
+			$out[ (string) $row['source'] ] = array(
+				'count'   => (int) $row['total'],
+				'last_at' => (int) $row['last_at'],
+			);
+		}
+		return $out;
 	}
 
 	/**
