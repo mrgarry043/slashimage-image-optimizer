@@ -359,8 +359,8 @@ class Slash_Image_Admin {
 					'badge_none'                => __( 'Not detected', 'slashimage-image-optimizer' ),
 					'none_found'                => __( 'No optimization data found.', 'slashimage-image-optimizer' ),
 					'empty'                     => __( 'No other image optimizer was found on this site. Nothing to migrate.', 'slashimage-image-optimizer' ),
-					/* translators: %d: number of images. */
-					'detected_count'            => __( '%d images with importable optimization data.', 'slashimage-image-optimizer' ),
+					/* translators: %1$d: number of images. %2$s: source plugin name, e.g. "Imagify". */
+					'detected_count'            => __( '%1$d images with %2$s optimization data.', 'slashimage-image-optimizer' ),
 					'warn_title'                => __( 'Before you migrate', 'slashimage-image-optimizer' ),
 					'warn_shortpixel'           => __( 'Keep ShortPixel installed until this finishes. Afterwards uninstall it normally - do NOT use its "Remove all data" tool, which deletes the WebP and AVIF files SlashImage links to.', 'slashimage-image-optimizer' ),
 					'note_imagify'              => __( "Imagify's own uninstall leaves its optimization data and image files in place, so no special order is needed.", 'slashimage-image-optimizer' ),

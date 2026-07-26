@@ -97,14 +97,35 @@
 		return html;
 	}
 
+	/** Shared markup: the neutral "why deactivate" notice, then the button. */
+	function deactivateNotice() {
+		return '<div class="slash-image-alert slash-image-alert--inline">' +
+			esc( t( 'note_deactivate',
+				'Two active optimizers both rewrite front-end markup, which can double-wrap images. Now that the data is imported, this plugin can be turned off.' ) ) +
+			'</div>';
+	}
+
+	function deactivateButton( card ) {
+		return '<button type="button" class="slash-image-btn slash-image-btn--danger-outline" data-act="deactivate" data-source="' + esc( card.source ) + '">' +
+			esc( ( t( 'btn_deactivate', 'Deactivate %s' ) ).replace( '%s', card.label ) ) + '</button>';
+	}
+
+	function noBackupNote() {
+		return '<p class="slash-image-tools__note">' + esc( t( 'note_no_backup',
+			'Migrated images have no SlashImage backup, so Restore and forced re-optimize stay unavailable for them until SlashImage optimizes them fresh.' ) ) + '</p>';
+	}
+
 	function cardMarkup( card ) {
 		var st = runs[ card.source ] || {};
 		var body = '';
-		var badge, badgeClass;
+		var badge, badgeClass, badgeIcon = '';
 
 		if ( card.migrated > 0 && ! st.stats ) {
 			badge = t( 'badge_migrated', 'Migrated' );
 			badgeClass = 'is-done';
+			// The check carries the meaning for anyone who does not read the
+			// label; the text stays for screen readers and translation.
+			badgeIcon = '<span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>';
 		} else if ( card.detected ) {
 			badge = t( 'badge_detected', 'Detected' );
 			badgeClass = 'is-detected';
@@ -115,7 +136,7 @@
 
 		body += '<div class="slash-image-tools__card-head">';
 		body += '<h3>' + esc( card.label ) + '</h3>';
-		body += '<span class="slash-image-tools__badge ' + badgeClass + '">' + esc( badge ) + '</span>';
+		body += '<span class="slash-image-tools__badge ' + badgeClass + '">' + badgeIcon + esc( badge ) + '</span>';
 		body += '</div>';
 
 		if ( ! card.detected && ! card.migrated ) {
@@ -125,27 +146,18 @@
 
 		// Done state — no scan in progress and everything already imported.
 		if ( card.migrated > 0 && ! st.stats && ! st.busy ) {
-			body += '<p>' + esc(
+			body += '<p class="slash-image-tools__done">' + esc(
 				( t( 'done_summary', '%1$d images migrated from %2$s on %3$s.' ) )
 					.replace( '%1$d', card.migrated )
 					.replace( '%2$s', card.label )
 					.replace( '%3$s', card.migrated_at )
 			) + '</p>';
-			body += '<p class="slash-image-tools__note">' + esc( t( 'note_no_backup',
-				'Migrated images have no SlashImage backup, so Restore and forced re-optimize stay unavailable for them until SlashImage optimizes them fresh.' ) ) + '</p>';
+			body += noBackupNote();
+			if ( card.plugin_file ) { body += deactivateNotice(); }
 			body += '<div class="slash-image-tools__actions">';
 			body += '<button type="button" class="slash-image-btn slash-image-btn--soft" data-act="scan" data-source="' + esc( card.source ) + '">' + esc( t( 'btn_rescan', 'Scan again' ) ) + '</button>';
-			// Offered only while that plugin is still active, and only here in
-			// the done state - never before a migration completes.
-			if ( card.plugin_file ) {
-				body += '<button type="button" class="slash-image-btn slash-image-btn--danger-outline" data-act="deactivate" data-source="' + esc( card.source ) + '">' +
-					esc( ( t( 'btn_deactivate', 'Deactivate %s' ) ).replace( '%s', card.label ) ) + '</button>';
-			}
+			if ( card.plugin_file ) { body += deactivateButton( card ); }
 			body += '</div>';
-			if ( card.plugin_file ) {
-				body += '<p class="slash-image-tools__note">' + esc( t( 'note_deactivate',
-					'Two active optimizers both rewrite front-end markup, which can double-wrap images. Now that the data is imported, this plugin can be turned off.' ) ) + '</p>';
-			}
 			return body;
 		}
 
@@ -163,8 +175,15 @@
 				'Imagify\'s own uninstall leaves its optimization data and image files in place, so no special order is needed.' ) ) + '</p>';
 		}
 
+		// How much data the source HAS. Deliberately makes no importability
+		// claim: only a scan can tell how much of it we can actually import,
+		// and most of it may already be migrated.
 		if ( card.detected ) {
-			body += '<p>' + esc( ( t( 'detected_count', '%d images with importable optimization data.' ) ).replace( '%d', card.total ) ) + '</p>';
+			body += '<p>' + esc(
+				( t( 'detected_count', '%1$d images with %2$s optimization data.' ) )
+					.replace( '%1$d', card.total )
+					.replace( '%2$s', card.label )
+			) + '</p>';
 		}
 
 		if ( st.busy ) {
@@ -176,11 +195,17 @@
 			return body;
 		}
 
+		// A completed scan that found nothing to import means everything here is
+		// already migrated or already ours — so the plugin is safe to turn off,
+		// same as the done state. With work outstanding, Migrate now is the
+		// primary action and deactivating would strip the source mid-job.
+		var scanFoundNothing = !! st.stats && 0 === st.stats.migrated;
+
 		if ( st.stats ) {
 			body += scanReport( st.stats );
-			body += '<p class="slash-image-tools__note">' + esc( t( 'note_no_backup',
-				'Migrated images have no SlashImage backup, so Restore and forced re-optimize stay unavailable for them until SlashImage optimizes them fresh.' ) ) + '</p>';
+			body += noBackupNote();
 		}
+		if ( scanFoundNothing && card.plugin_file ) { body += deactivateNotice(); }
 
 		body += '<div class="slash-image-tools__actions">';
 		body += '<button type="button" class="slash-image-btn slash-image-btn--soft" data-act="scan" data-source="' + esc( card.source ) + '">' +
@@ -190,6 +215,7 @@
 			body += '<button type="button" class="slash-image-btn slash-image-btn--primary" data-act="run" data-source="' + esc( card.source ) + '">' +
 				esc( t( 'btn_migrate', 'Migrate now' ) ) + '</button>';
 		}
+		if ( scanFoundNothing && card.plugin_file ) { body += deactivateButton( card ); }
 		body += '</div>';
 
 		return body;
