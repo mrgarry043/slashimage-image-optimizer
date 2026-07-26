@@ -183,6 +183,9 @@ $slash_image_group_head = static function ( $icon, $title, $desc = '', $danger =
 		<button type="button" class="slash-image-tab" data-tab="settings" role="tab" aria-controls="slash-image-tab-settings" aria-selected="false">
 			<span class="dashicons dashicons-admin-settings" aria-hidden="true"></span><?php echo esc_html__( 'Settings', 'slashimage-image-optimizer' ); ?>
 		</button>
+		<button type="button" class="slash-image-tab" data-tab="tools" role="tab" aria-controls="slash-image-tab-tools" aria-selected="false">
+			<span class="dashicons dashicons-admin-tools" aria-hidden="true"></span><?php echo esc_html__( 'Tools', 'slashimage-image-optimizer' ); ?>
+		</button>
 	</nav>
 
 	<form method="post" action="options.php" novalidate class="slash-image-form">
@@ -629,6 +632,29 @@ $slash_image_group_head = static function ( $icon, $title, $desc = '', $danger =
 			</div>
 		</footer>
 	</form>
+
+	<!--
+		Tools panel. Deliberately EMPTY server-side: its cards are fetched on
+		first activation, so the detection queries (a ShortPixel table probe, an
+		Imagify postmeta count) never run on an ordinary settings pageview.
+		Markup is built by admin/js/tools.js.
+	-->
+	<div class="slash-image-tab-panel" id="slash-image-tab-tools" data-tab-panel="tools" role="tabpanel">
+		<section class="slash-image-group">
+			<?php
+			$slash_image_group_head(
+				'migrate',
+				__( 'Migrate from another optimizer', 'slashimage-image-optimizer' ),
+				__( 'Import optimization data from another plugin so its work counts as SlashImage\'s, and the WebP and AVIF files it created are served by SlashImage.', 'slashimage-image-optimizer' )
+			);
+			?>
+			<div class="slash-image-group__body">
+				<div id="slash-image-tools-cards" class="slash-image-tools" data-state="idle">
+					<p class="slash-image-tools__loading"><?php echo esc_html__( 'Checking for other optimizers…', 'slashimage-image-optimizer' ); ?></p>
+				</div>
+			</div>
+		</section>
+	</div>
 
 	<!-- Custom Exclusions modal -->
 	<div class="slash-image-modal" id="slash-image-exclusions-modal" role="dialog" aria-modal="true" aria-labelledby="slash-image-exclusions-modal-title" hidden>

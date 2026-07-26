@@ -336,6 +336,57 @@ class Slash_Image_Admin {
 				),
 			)
 		);
+
+		// Tools tab. Separate handle + payload so the Tools strings are not
+		// loaded into every settings pageview's inline script alongside the
+		// (much larger) settings payload.
+		wp_enqueue_script(
+			'slash-image-tools',
+			SLASH_IMAGE_URL . 'admin/js/tools.js',
+			array(),
+			SLASH_IMAGE_VERSION,
+			true
+		);
+		wp_localize_script(
+			'slash-image-tools',
+			'SlashImageTools',
+			array(
+				'ajax_url' => admin_url( 'admin-ajax.php' ),
+				'nonce'    => wp_create_nonce( Slash_Image_Tools_Page::NONCE_ACTION ),
+				'i18n'     => array(
+					'badge_detected'            => __( 'Detected', 'slashimage-image-optimizer' ),
+					'badge_migrated'            => __( 'Migrated', 'slashimage-image-optimizer' ),
+					'badge_none'                => __( 'Not detected', 'slashimage-image-optimizer' ),
+					'none_found'                => __( 'No optimization data found.', 'slashimage-image-optimizer' ),
+					'empty'                     => __( 'No other image optimizer was found on this site. Nothing to migrate.', 'slashimage-image-optimizer' ),
+					/* translators: %d: number of images. */
+					'detected_count'            => __( '%d images with importable optimization data.', 'slashimage-image-optimizer' ),
+					'warn_title'                => __( 'Before you migrate', 'slashimage-image-optimizer' ),
+					'warn_shortpixel'           => __( 'Keep ShortPixel installed until this finishes. Afterwards uninstall it normally - do NOT use its "Remove all data" tool, which deletes the WebP and AVIF files SlashImage links to.', 'slashimage-image-optimizer' ),
+					'note_imagify'              => __( "Imagify's own uninstall leaves its optimization data and image files in place, so no special order is needed.", 'slashimage-image-optimizer' ),
+					'note_no_backup'            => __( 'Migrated images have no SlashImage backup, so Restore and forced re-optimize stay unavailable for them until SlashImage optimizes them fresh.', 'slashimage-image-optimizer' ),
+					'btn_scan'                  => __( 'Scan', 'slashimage-image-optimizer' ),
+					'btn_rescan'                => __( 'Scan again', 'slashimage-image-optimizer' ),
+					'btn_migrate'               => __( 'Migrate now', 'slashimage-image-optimizer' ),
+					/* translators: %1$d: number of images. %2$s: source plugin name. %3$s: date. */
+					'done_summary'              => __( '%1$d images migrated from %2$s on %3$s.', 'slashimage-image-optimizer' ),
+					/* translators: %1$d: images examined so far. %2$d: total images. */
+					'progress'                  => __( '%1$d of %2$d examined', 'slashimage-image-optimizer' ),
+					'failed'                    => __( 'That did not work. Please reload and try again.', 'slashimage-image-optimizer' ),
+					'stat_importable'           => __( 'Importable', 'slashimage-image-optimizer' ),
+					'stat_already_migrated'     => __( 'Already migrated', 'slashimage-image-optimizer' ),
+					'stat_already_ours'         => __( 'Already optimized by SlashImage', 'slashimage-image-optimizer' ),
+					'stat_skipped_status'       => __( 'Skipped - not importable', 'slashimage-image-optimizer' ),
+					'stat_skipped_restored'     => __( '- of which reverted', 'slashimage-image-optimizer' ),
+					'stat_skipped_already'      => __( '- of which already small enough', 'slashimage-image-optimizer' ),
+					'stat_skipped_mime'         => __( 'Skipped - unsupported type', 'slashimage-image-optimizer' ),
+					'stat_skipped_missing'      => __( 'Skipped - file missing', 'slashimage-image-optimizer' ),
+					'stat_webp'                 => __( 'WebP files to serve', 'slashimage-image-optimizer' ),
+					'stat_avif'                 => __( 'AVIF files to serve', 'slashimage-image-optimizer' ),
+					'stat_missing_disk'         => __( 'Recorded but missing on disk', 'slashimage-image-optimizer' ),
+				),
+			)
+		);
 	}
 
 	public function ajax_save_key() {

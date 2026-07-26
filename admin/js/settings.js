@@ -8,7 +8,7 @@
 	var cfg  = window.SlashImageSettings;
 	var i18n = cfg.i18n || {};
 
-	var TABS              = [ 'dashboard', 'settings' ];
+	var TABS              = [ 'dashboard', 'settings', 'tools' ];
 	// Section anchors that deep-link to a tab and scroll to a section (e.g. the
 	// Bulk Optimize credits tooltip points at #image-sizes). Maps fragment → tab.
 	var SECTION_TABS      = { 'image-sizes': 'settings' };
@@ -71,6 +71,10 @@
 		if ( window.location.hash !== '#' + name ) {
 			history.replaceState( null, '', '#' + name );
 		}
+		// Let lazily-populated panels (Tools) know they became visible. Their
+		// body is fetched on first activation rather than rendered server-side,
+		// so the settings page costs nothing extra until the tab is opened.
+		document.dispatchEvent( new CustomEvent( 'slashimage:tab', { detail: { tab: name } } ) );
 	}
 
 	// Route a raw hash fragment. A tab name activates that tab; a known section
