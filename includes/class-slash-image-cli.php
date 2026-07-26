@@ -681,42 +681,32 @@ class Slash_Image_CLI {
 	private static function report_migration( array $s, $label, $dry_run ) {
 		WP_CLI::log( '' );
 		WP_CLI::log( $dry_run ? sprintf( 'Would import from %s:', $label ) : sprintf( 'Imported from %s:', $label ) );
-		WP_CLI::log( sprintf( '  Importable attachments:              %d', $s['migrated'] ) );
-		WP_CLI::log( sprintf( '  Already optimized by SlashImage:     %d', $s['already_ours'] ) );
-		WP_CLI::log( sprintf( '  Already migrated:                    %d', $s['already_migrated'] ) );
+		WP_CLI::log( sprintf( '  %-36s %d', 'Importable attachments:', $s['migrated'] ) );
+		WP_CLI::log( sprintf( '  %-36s %d', 'Already optimized by SlashImage:', $s['already_ours'] ) );
+		WP_CLI::log( sprintf( '  %-36s %d', 'Already migrated:', $s['already_migrated'] ) );
 		WP_CLI::log(
 			sprintf(
-				'  Skipped, not an importable status:   %d (of which reverted in %s: %d)',
+				'  %-36s %d (of which reverted in %s: %d)',
+				'Skipped, not an importable status:',
 				$s['skipped_status'],
 				$label,
 				$s['skipped_restored']
 			)
 		);
-		WP_CLI::log( sprintf( '  Skipped, unsupported type:           %d', $s['skipped_unsupported_mime'] ) );
-		WP_CLI::log( sprintf( '  Skipped, file missing on disk:       %d', $s['skipped_file_missing'] ) );
-		WP_CLI::log( sprintf( '  Skipped, no usable records:          %d', $s['skipped_no_usable_rows'] ) );
+		WP_CLI::log( sprintf( '  %-36s %d', 'Skipped, unsupported type:', $s['skipped_unsupported_mime'] ) );
+		WP_CLI::log( sprintf( '  %-36s %d', 'Skipped, file missing on disk:', $s['skipped_file_missing'] ) );
+		WP_CLI::log( sprintf( '  %-36s %d', 'Skipped, no usable records:', $s['skipped_no_usable_rows'] ) );
 
 		WP_CLI::log( '' );
 		WP_CLI::log( 'Next-gen siblings:' );
-		WP_CLI::log(
-			sprintf(
-				'  WebP %s:                            %d',
-				$dry_run ? 'to link' : 'linked  ',
-				$s['webp_linked']
-			)
-		);
-		WP_CLI::log(
-			sprintf(
-				'  AVIF %s:                            %d',
-				$dry_run ? 'to link' : 'linked  ',
-				$s['avif_linked']
-			)
-		);
-		WP_CLI::log( sprintf( '  Already present (left alone):        %d', $s['webp_already_present'] + $s['avif_already_present'] ) );
-		WP_CLI::log( sprintf( '  Recorded but missing on disk:        %d', $s['webp_missing'] + $s['avif_missing'] ) );
-		WP_CLI::log( sprintf( '  Skipped, conversion was larger:      %d', $s['sentinel_skipped'] ) );
+		$verb = $dry_run ? 'to link' : 'linked';
+		WP_CLI::log( sprintf( '  %-36s %d', 'WebP ' . $verb . ':', $s['webp_linked'] ) );
+		WP_CLI::log( sprintf( '  %-36s %d', 'AVIF ' . $verb . ':', $s['avif_linked'] ) );
+		WP_CLI::log( sprintf( '  %-36s %d', 'Already present (left alone):', $s['webp_already_present'] + $s['avif_already_present'] ) );
+		WP_CLI::log( sprintf( '  %-36s %d', 'Recorded but missing on disk:', $s['webp_missing'] + $s['avif_missing'] ) );
+		WP_CLI::log( sprintf( '  %-36s %d', 'Skipped, conversion was larger:', $s['sentinel_skipped'] ) );
 		if ( $s['link_failed'] > 0 ) {
-			WP_CLI::log( sprintf( '  Could not be linked or copied:       %d', $s['link_failed'] ) );
+			WP_CLI::log( sprintf( '  %-36s %d', 'Could not be linked or copied:', $s['link_failed'] ) );
 		}
 		WP_CLI::log( '' );
 
