@@ -198,6 +198,18 @@ class Slash_Image_Worker {
 		$limit_bytes    = self::parse_memory_limit( ini_get( 'memory_limit' ) );
 		$memory_enabled = ( -1 !== (int) $limit_bytes );
 
+		// Forced re-optimize context, resolved ONCE per tick (not per row): the
+		// session is a single option, so re-reading it inside the loop would be
+		// pure overhead and could also see a mid-tick status flip. Only a
+		// genuinely running OPTIMIZE run that was started with force set counts;
+		// `force_reoptimize` is written by start()/start_with_ids() alone, never
+		// by retry_failed() (which sets the separate, differently-scoped
+		// `force_redo`). process_row() narrows this further to bulk-sourced rows.
+		$session   = self::get_session();
+		$force_run = ! empty( $session['force_reoptimize'] )
+			&& Slash_Image_Queue::JOB_TYPE_OPTIMIZE === ( $session['action'] ?? '' )
+			&& 'running' === ( $session['status'] ?? '' );
+
 		$token  = wp_generate_uuid4();
 		$result = array(
 			'processed' => 0,
@@ -240,7 +252,7 @@ class Slash_Image_Worker {
 				);
 			}
 
-			$outcome = self::process_row( $row );
+			$outcome = self::process_row( $row, $force_run );
 			if ( 'success' === $outcome ) {
 				++$result['processed'];
 			} elseif ( 'failed' === $outcome ) {
@@ -324,12 +336,29 @@ class Slash_Image_Worker {
 	 *   failure.
 	 * - Failed: API error, file unreadable, etc. Goes through the
 	 *   queue's retry/failure logic.
+	 *
+	 * @param array $row       The claimed queue row.
+	 * @param bool  $force_run Whether the active bulk session is a forced
+	 *                         re-optimize run (resolved once per tick by
+	 *                         drain()). Optional so direct callers — the
+	 *                         notes/tests harnesses — keep working unchanged.
+	 * @return string 'success' | 'failed' | 'silent' | 'halt'
 	 */
-	private static function process_row( array $row ) {
+	private static function process_row( array $row, $force_run = false ) {
 		$row_id        = (int) $row['id'];
 		$attachment_id = (int) $row['attachment_id'];
 		$job_type      = isset( $row['job_type'] ) ? (string) $row['job_type'] : Slash_Image_Queue::JOB_TYPE_OPTIMIZE;
-		$force         = ( Slash_Image_Queue::SOURCE_RETRY === ( $row['source'] ?? '' ) );
+		$source        = (string) ( $row['source'] ?? '' );
+
+		// Force is granted by either of two disjoint routes:
+		//   1. A retry-sourced row (unchanged, pre-existing behaviour).
+		//   2. A BULK-sourced row belonging to an active forced run.
+		// Scoping (2) to SOURCE_BULK is what keeps upload- and manual-sourced
+		// rows on their normal path even while a forced run is draining
+		// alongside them — the feed's anti-join can't cover that case, because
+		// upload rows arrive independently of the run.
+		$force = ( Slash_Image_Queue::SOURCE_RETRY === $source )
+			|| ( $force_run && Slash_Image_Queue::SOURCE_BULK === $source );
 
 		// Silent skip: attachment was deleted between enqueue and processing.
 		if ( 'attachment' !== get_post_type( $attachment_id ) ) {
