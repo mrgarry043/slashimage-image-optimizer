@@ -35,6 +35,39 @@ class Slash_Image_Tools_Page {
 		add_action( 'wp_ajax_slash_image_migrate_detect', array( $this, 'ajax_detect' ) );
 		add_action( 'wp_ajax_slash_image_migrate_scan', array( $this, 'ajax_scan' ) );
 		add_action( 'wp_ajax_slash_image_migrate_run', array( $this, 'ajax_run' ) );
+		add_action( 'wp_ajax_slash_image_migrate_deactivate', array( $this, 'ajax_deactivate' ) );
+	}
+
+	/**
+	 * Deactivate a migrated-from plugin, on explicit user action only.
+	 *
+	 * Offered from the done-state card because two active optimizers both
+	 * rewrite front-end markup, which can double-wrap images. Never automatic
+	 * and never offered before a migration completes — deactivating ShortPixel
+	 * early would strip the source data mid-import.
+	 *
+	 * Only ever acts on a plugin file this class maps to a known migration
+	 * source AND that is currently active, so an arbitrary plugin path from the
+	 * request can never be deactivated.
+	 */
+	public function ajax_deactivate() {
+		$this->verify_request();
+		$source = $this->requested_source();
+
+		$plugin_file = $this->active_plugin_file( $source );
+		if ( '' === $plugin_file ) {
+			// Already inactive, or not a plugin we recognise for this source.
+			wp_send_json_error( array( 'code' => 'not_active' ), 409 );
+		}
+
+		deactivate_plugins( $plugin_file );
+
+		wp_send_json_success(
+			array(
+				'source'      => $source,
+				'deactivated' => ! is_plugin_active( $plugin_file ),
+			)
+		);
 	}
 
 	/**

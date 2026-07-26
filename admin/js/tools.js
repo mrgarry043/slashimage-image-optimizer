@@ -135,7 +135,17 @@
 				'Migrated images have no SlashImage backup, so Restore and forced re-optimize stay unavailable for them until SlashImage optimizes them fresh.' ) ) + '</p>';
 			body += '<div class="slash-image-tools__actions">';
 			body += '<button type="button" class="slash-image-btn slash-image-btn--soft" data-act="scan" data-source="' + esc( card.source ) + '">' + esc( t( 'btn_rescan', 'Scan again' ) ) + '</button>';
+			// Offered only while that plugin is still active, and only here in
+			// the done state - never before a migration completes.
+			if ( card.plugin_file ) {
+				body += '<button type="button" class="slash-image-btn slash-image-btn--danger-outline" data-act="deactivate" data-source="' + esc( card.source ) + '">' +
+					esc( ( t( 'btn_deactivate', 'Deactivate %s' ) ).replace( '%s', card.label ) ) + '</button>';
+			}
 			body += '</div>';
+			if ( card.plugin_file ) {
+				body += '<p class="slash-image-tools__note">' + esc( t( 'note_deactivate',
+					'Two active optimizers both rewrite front-end markup, which can double-wrap images. Now that the data is imported, this plugin can be turned off.' ) ) + '</p>';
+			}
 			return body;
 		}
 
@@ -285,6 +295,14 @@
 
 			if ( 'scan' === act ) { start( source, 'slash_image_migrate_scan' ); }
 			if ( 'run' === act ) { start( source, 'slash_image_migrate_run' ); }
+			if ( 'deactivate' === act ) {
+				var c = cardFor( source );
+				if ( ! window.confirm( ( t( 'confirm_deactivate', 'Deactivate %s now?' ) ).replace( '%s', c ? c.label : source ) ) ) { return; }
+				btn.disabled = true;
+				post( 'slash_image_migrate_deactivate', { source: source } ).then( function ( res ) {
+					if ( res.ok ) { window.location.reload(); } else { btn.disabled = false; }
+				} );
+			}
 		} );
 
 		document.addEventListener( 'slashimage:tab', function ( e ) {

@@ -384,6 +384,11 @@ class Slash_Image_Admin {
 					'stat_webp'                 => __( 'WebP files to serve', 'slashimage-image-optimizer' ),
 					'stat_avif'                 => __( 'AVIF files to serve', 'slashimage-image-optimizer' ),
 					'stat_missing_disk'         => __( 'Recorded but missing on disk', 'slashimage-image-optimizer' ),
+					/* translators: %s: source plugin name, e.g. "ShortPixel". */
+					'btn_deactivate'            => __( 'Deactivate %s', 'slashimage-image-optimizer' ),
+					/* translators: %s: source plugin name, e.g. "ShortPixel". */
+					'confirm_deactivate'        => __( 'Deactivate %s now?', 'slashimage-image-optimizer' ),
+					'note_deactivate'           => __( 'Two active optimizers both rewrite front-end markup, which can double-wrap images. Now that the data is imported, this plugin can be turned off.', 'slashimage-image-optimizer' ),
 				),
 			)
 		);
