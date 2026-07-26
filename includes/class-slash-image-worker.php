@@ -268,6 +268,47 @@ class Slash_Image_Worker {
 	}
 
 	/**
+	 * Prepare an already-optimized attachment for a forced re-optimize by
+	 * restoring its original from backup, so the subsequent optimize works from
+	 * the true original rather than re-compressing compressed bytes.
+	 *
+	 * Mirrors Slash_Image_Media_Library::enqueue_reoptimize()'s branch — the
+	 * single convention for "re-optimize an optimized image" in the plugin.
+	 * restore_attachment() puts every size back on disk AND deletes
+	 * _slash_image_data (plus the backup record and flat stats), so the caller
+	 * proceeds against a genuinely un-optimized image and the force flag becomes
+	 * a no-op downstream.
+	 *
+	 * A not-yet-optimized attachment needs no preparation and returns '' — the
+	 * common case on a forced run over a partially-optimized library.
+	 *
+	 * @param int $attachment_id Attachment post ID.
+	 * @return string '' to proceed with the optimize, otherwise a terminal
+	 *                informational code for the row ('no_backup' | 'restore_failed').
+	 */
+	private static function prepare_forced_reoptimize( $attachment_id ) {
+		$data = get_post_meta( $attachment_id, Slash_Image_Media_Handler::META_DATA_KEY, true );
+		if ( ! is_array( $data ) || empty( $data['optimized'] ) ) {
+			return '';
+		}
+
+		$backup = get_post_meta( $attachment_id, Slash_Image_Restore::BACKUP_META_KEY, true );
+		if ( ! is_array( $backup ) || empty( $backup['sizes'] ) ) {
+			// No original to restore from. Re-optimizing in place would double
+			// compress, so skip — informational, NOT a failure (the image is
+			// fine; it is simply already optimized and unrecoverable to source).
+			return 'no_backup';
+		}
+
+		$restored = Slash_Image_Restore::restore_attachment( $attachment_id );
+		if ( empty( $restored['ok'] ) ) {
+			return 'restore_failed';
+		}
+
+		return '';
+	}
+
+	/**
 	 * Pure stop predicate for the drain loop (no runtime reads — unit-testable).
 	 * Returns true when the worker should stop BEFORE claiming the next row.
 	 *
@@ -395,6 +436,21 @@ class Slash_Image_Worker {
 			delete_post_meta( $attachment_id, Slash_Image_Bulk_Processor::STATUS_META_KEY );
 			Slash_Image_Queue::complete( $row_id, 'excluded' );
 			return 'silent';
+		}
+
+		// Forced re-optimize of an already-optimized image: restore the original
+		// FIRST, matching what the Media Library "Re-optimize" action does
+		// (Slash_Image_Media_Library::enqueue_reoptimize). Optimizing in place
+		// would re-compress already-compressed bytes — cumulative quality loss,
+		// and the recorded original_size would be the compressed size, which
+		// would corrupt the savings aggregates.
+		if ( $force ) {
+			$prepared = self::prepare_forced_reoptimize( $attachment_id );
+			if ( '' !== $prepared ) {
+				delete_post_meta( $attachment_id, Slash_Image_Bulk_Processor::STATUS_META_KEY );
+				Slash_Image_Queue::complete( $row_id, $prepared );
+				return 'silent';
+			}
 		}
 
 		// Status meta drives the Media Library column's transitional badge.
