@@ -1296,8 +1296,11 @@ class Slash_Image_Media_Library {
 				return;
 		}
 
+		// The extra class is the scroll target for notice-cleanup.js. Anchoring on
+		// our own class rather than '.notice' means we never scroll to someone
+		// else's notice that happens to render first on the same page.
 		printf(
-			'<div class="notice notice-%s is-dismissible"><p>%s</p></div>',
+			'<div class="notice notice-%s is-dismissible slash-image-bulk-notice"><p>%s</p></div>',
 			esc_attr( $kind ),
 			esc_html( $msg )
 		);
