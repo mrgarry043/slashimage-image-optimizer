@@ -66,11 +66,11 @@ class Slash_Image_Bulk_Processor {
 		$force_redo = (bool) $force_redo;
 		$total      = self::count_eligible_attachments( $force_redo );
 
-		$session                  = Slash_Image_Worker::get_session();
-		$session['action']        = Slash_Image_Queue::JOB_TYPE_OPTIMIZE;
-		$session['status']        = $total > 0 ? 'running' : 'completed';
-		$session['started_at']    = time();
-		$session['finished_at']   = $total > 0 ? null : time();
+		$session                     = Slash_Image_Worker::get_session();
+		$session['action']           = Slash_Image_Queue::JOB_TYPE_OPTIMIZE;
+		$session['status']           = $total > 0 ? 'running' : 'completed';
+		$session['started_at']       = time();
+		$session['finished_at']      = $total > 0 ? null : time();
 		$session['source_cursor']    = 0;
 		$session['source_done']      = false;
 		$session['force_redo']       = $force_redo;
@@ -106,6 +106,10 @@ class Slash_Image_Bulk_Processor {
 
 		$total = self::count_backed_up_attachments();
 
+		// force_reoptimize is cleared explicitly (not left to the get_session()
+		// default): a restore run is never forced, and get_session() merges
+		// defaults UNDER the stored option, so a preceding forced optimize run's
+		// flag would otherwise survive into this session.
 		$session                       = Slash_Image_Worker::get_session();
 		$session['action']             = Slash_Image_Queue::JOB_TYPE_RESTORE;
 		$session['status']             = $total > 0 ? 'running' : 'completed';
@@ -114,13 +118,10 @@ class Slash_Image_Bulk_Processor {
 		$session['source_cursor']      = 0;
 		$session['source_done']        = false;
 		$session['force_redo']         = false;
-		// A restore run is never forced. Cleared explicitly (not left to the
-		// get_session() default) so a preceding forced optimize run's flag
-		// cannot survive in the stored option.
 		$session['force_reoptimize']   = false;
 		$session['total_target']       = $total;
 		$session['deferred_in_flight'] = 0;
-		$session['last_tick_at']        = time();
+		$session['last_tick_at']       = time();
 		Slash_Image_Worker::save_session( $session );
 
 		if ( $total > 0 ) {
@@ -213,12 +214,12 @@ class Slash_Image_Bulk_Processor {
 			);
 		}
 
-		$total                    = count( $filtered );
-		$session                  = Slash_Image_Worker::get_session();
-		$session['action']        = Slash_Image_Queue::JOB_TYPE_OPTIMIZE;
-		$session['status']        = $total > 0 ? 'running' : 'idle';
-		$session['started_at']    = time();
-		$session['finished_at']   = $total > 0 ? null : time();
+		$total                       = count( $filtered );
+		$session                     = Slash_Image_Worker::get_session();
+		$session['action']           = Slash_Image_Queue::JOB_TYPE_OPTIMIZE;
+		$session['status']           = $total > 0 ? 'running' : 'idle';
+		$session['started_at']       = time();
+		$session['finished_at']      = $total > 0 ? null : time();
 		$session['source_cursor']    = 0;
 		$session['source_done']      = true; // IDs supplied — no source pagination needed.
 		$session['force_redo']       = $force_redo;
@@ -326,17 +327,19 @@ class Slash_Image_Bulk_Processor {
 			}
 		}
 
-		$session                  = Slash_Image_Worker::get_session();
-		$session['action']        = Slash_Image_Queue::JOB_TYPE_OPTIMIZE;
-		$session['status']        = $count > 0 ? 'running' : 'idle';
-		$session['started_at']    = time();
-		$session['finished_at']   = $count > 0 ? null : time();
-		$session['source_cursor'] = 0;
-		$session['source_done']   = true; // Reset rows already exist; no source pagination.
-		$session['force_redo']    = true;
-		// NOT a forced re-optimize: retrying a failed row must not restore-then-
-		// reoptimize it. Cleared explicitly so a preceding forced run's flag
-		// cannot survive in the stored option and silently widen this run.
+		// force_redo marks this as a retry run (it drives the feed), but
+		// force_reoptimize stays FALSE: retrying a failed row must not
+		// restore-then-reoptimize it. Cleared explicitly rather than left to the
+		// get_session() default, which merges under the stored option and would
+		// otherwise let a preceding forced run's flag widen this one.
+		$session                     = Slash_Image_Worker::get_session();
+		$session['action']           = Slash_Image_Queue::JOB_TYPE_OPTIMIZE;
+		$session['status']           = $count > 0 ? 'running' : 'idle';
+		$session['started_at']       = time();
+		$session['finished_at']      = $count > 0 ? null : time();
+		$session['source_cursor']    = 0;
+		$session['source_done']      = true; // Reset rows already exist; no source pagination.
+		$session['force_redo']       = true;
 		$session['force_reoptimize'] = false;
 		$session['total_target']     = $count;
 		$session['last_tick_at']     = time();

@@ -359,26 +359,22 @@ class Slash_Image_CLI {
 
 		$ids = $all ? array() : array_values( array_unique( array_filter( array_map( 'intval', $args ) ) ) );
 
-		// Measure how much of the target is ALREADY optimized before seeding, so a
-		// --force run can report honestly. The worker re-optimizes only retry-sourced
-		// rows (process_row derives force from source===retry), so already-optimized
-		// images re-queued by --force are skipped downstream, not re-optimized.
-		$force_already         = 0;
-		$force_has_unoptimized = true;
-		if ( $force ) {
-			if ( $all ) {
-				$counts                = Slash_Image_Bulk_Processor::library_counts();
-				$force_already         = (int) ( $counts['optimized'] ?? 0 );
-				$force_has_unoptimized = ( (int) ( $counts['not_optimized'] ?? 0 ) > 0 );
-			} else {
-				$force_has_unoptimized = false;
-				foreach ( $ids as $target_id ) {
-					$data = get_post_meta( $target_id, Slash_Image_Media_Handler::META_DATA_KEY, true );
-					if ( is_array( $data ) && ! empty( $data['optimized'] ) ) {
-						++$force_already;
-					} else {
-						$force_has_unoptimized = true;
-					}
+		// A forced run restores each already-optimized image from its backup before
+		// re-optimizing, so an optimized image with NO backup cannot be returned to
+		// source and is skipped (worker: prepare_forced_reoptimize → 'no_backup').
+		// Warn up front when EVERY targeted image is in that state, since the run
+		// would otherwise finish reporting 0 processed with no explanation. The
+		// authoritative per-run count comes from the completion codes after the
+		// drain, not from this estimate.
+		$force_unbacked   = 0;
+		$force_actionable = true;
+		if ( $force && ! $all ) {
+			$force_actionable = false;
+			foreach ( $ids as $target_id ) {
+				if ( self::is_optimized_without_backup( $target_id ) ) {
+					++$force_unbacked;
+				} else {
+					$force_actionable = true;
 				}
 			}
 		}
@@ -407,6 +403,12 @@ class Slash_Image_CLI {
 		// Pre-existing failed rows from earlier runs never inflate this run's
 		// summary or its exit code.
 		$failed_baseline = (int) ( Slash_Image_Queue::counts()['failed'] ?? 0 );
+
+		// Same run-scoping for no-backup skips: the code count is queue-global, so
+		// baseline it here and diff after the drain. This is the authoritative
+		// figure reported in the summary — derived from what the run actually did,
+		// not from the pre-seed estimate above.
+		$no_backup_baseline = Slash_Image_Queue::count_done_with_code( 'no_backup' );
 
 		// Nothing eligible → clean exit (e.g. --all with everything already
 		// optimized and no --force). start*() leaves status != 'running' here.
@@ -468,20 +470,34 @@ class Slash_Image_CLI {
 		// baseline. max( 0, … ) guards the concurrent-cleanup edge.
 		$failed = max( 0, (int) $progress['failed_count'] - $failed_baseline );
 
-		// Honest --force report: when every targeted image was already optimized,
-		// nothing was re-optimized (the worker skipped the re-queued rows). Say so
-		// plainly instead of a misleading "N processed".
-		if ( $force && $force_already > 0 && ! $force_has_unoptimized && 0 === $failed ) {
+		// Run-scoped no-backup skips, from the completion codes.
+		$no_backup = max( 0, Slash_Image_Queue::count_done_with_code( 'no_backup' ) - $no_backup_baseline );
+
+		// Every targeted image was already optimized with no backup to revert to,
+		// so the run had nothing it could act on. Say so plainly rather than
+		// reporting a bare "0 processed".
+		if ( $force && $force_unbacked > 0 && ! $force_actionable && 0 === $failed ) {
 			WP_CLI::warning(
 				sprintf(
-					'--force re-queued %d already-optimized image(s), but re-optimizing already-optimized images is not yet supported from the CLI, so they were skipped (no new optimization). Use the Media Library "Re-optimize" action, or run "wp slashimage restore <id>" then "wp slashimage optimize <id>", to re-optimize a specific image.',
-					$force_already
+					'Skipped %d already-optimized image(s): re-optimizing restores the original from backup first, and no backup exists for them. Enable "Keep backup of original images" in SlashImage settings before optimizing if you want to be able to re-optimize later.',
+					$force_unbacked
 				)
 			);
 			return;
 		}
 
 		$summary = sprintf( 'Optimize complete: %d processed, %d failed, %d deferred.', $done, $failed, $deferred );
+		if ( $no_backup > 0 ) {
+			// Phrased as a subset of $done on purpose: progress()['processed']
+			// counts every completed bulk row regardless of its terminal code
+			// (the same is true of 'excluded' and 'not_processable_format'
+			// skips), so these rows are already inside that figure. Reporting
+			// them as a separate addend would imply a larger run than happened.
+			$summary .= sprintf(
+				' Of those, %d skipped (no backup): already optimized with no backup to restore from, so they could not be re-optimized.',
+				$no_backup
+			);
+		}
 		if ( $deferred > 0 ) {
 			// Accurate on both drive paths: the worker cron retries deferred rows
 			// on its own once their backoff passes, and a straight CLI re-run would
@@ -521,6 +537,24 @@ class Slash_Image_CLI {
 	 * @param array $assoc_args Associative arguments (unused).
 	 * @return void
 	 */
+	/**
+	 * True when an attachment is already optimized but carries no backup record —
+	 * the state a forced re-optimize cannot act on, because it restores from
+	 * backup first rather than re-compressing compressed bytes.
+	 *
+	 * @param int $attachment_id Attachment post ID.
+	 * @return bool
+	 */
+	private static function is_optimized_without_backup( $attachment_id ) {
+		$data = get_post_meta( $attachment_id, Slash_Image_Media_Handler::META_DATA_KEY, true );
+		if ( ! is_array( $data ) || empty( $data['optimized'] ) ) {
+			return false;
+		}
+
+		$backup = get_post_meta( $attachment_id, Slash_Image_Restore::BACKUP_META_KEY, true );
+		return ! is_array( $backup ) || empty( $backup['sizes'] );
+	}
+
 	public function cancel( $args, $assoc_args ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- WP-CLI invokes every command with ( $args, $assoc_args ); cancel needs neither.
 		$session    = Slash_Image_Worker::get_session();
 		$run_status = Slash_Image_Bulk_Processor::decide_run_status(

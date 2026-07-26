@@ -388,6 +388,34 @@ class Slash_Image_Queue {
 		return is_array( $rows ) ? $rows : array();
 	}
 
+	/**
+	 * Count rows that finished successfully carrying a given informational
+	 * code (e.g. 'no_backup', 'excluded'). Used by drivers that need to report
+	 * skips distinctly from failures — a completed row is not a failure, so it
+	 * never appears in counts()['failed'].
+	 *
+	 * @param string $code Terminal informational code to match.
+	 * @return int
+	 */
+	public static function count_done_with_code( $code ) {
+		global $wpdb;
+
+		$code = (string) $code;
+		if ( '' === $code ) {
+			return 0;
+		}
+
+		$table = $wpdb->prefix . 'slash_image_queue';
+
+		return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table} WHERE status = %s AND error_code = %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $table is a prefix-derived literal.
+				self::STATUS_DONE,
+				$code
+			)
+		);
+	}
+
 	public static function complete( $row_id, $code = null ) {
 		global $wpdb;
 
