@@ -42,7 +42,7 @@ class Slash_Image_Dashboard_Widget {
 			'slash-image-dashboard-widget',
 			SLASH_IMAGE_URL . 'admin/css/dashboard-widget.css',
 			array(),
-			SLASH_IMAGE_VERSION
+			Slash_Image::asset_version( 'admin/css/dashboard-widget.css' )
 		);
 	}
 

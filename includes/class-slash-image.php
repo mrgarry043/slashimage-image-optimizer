@@ -11,6 +11,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class Slash_Image {
 
+	/**
+	 * Cache-busting version for a bundled admin asset.
+	 *
+	 * SLASH_IMAGE_VERSION alone is not enough: it only moves at release time, so
+	 * an asset edited between releases keeps the exact same URL and browsers (and
+	 * any CDN in front) go on serving the stale copy for the full max-age —
+	 * silently, with no error to notice. Appending the file's mtime makes the URL
+	 * change precisely when the content does, and stay stable when it does not.
+	 *
+	 * Costs one filemtime() per enqueued asset, on plugin admin screens only.
+	 *
+	 * @param string $rel_path Path relative to the plugin root, e.g. 'admin/js/settings.js'.
+	 * @return string
+	 */
+	public static function asset_version( $rel_path ) {
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- A missing file falls back to the release version.
+		$mtime = @filemtime( SLASH_IMAGE_PATH . ltrim( (string) $rel_path, '/' ) );
+		return $mtime ? SLASH_IMAGE_VERSION . '.' . $mtime : SLASH_IMAGE_VERSION;
+	}
+
 	private static $instance = null;
 
 	public static function instance() {

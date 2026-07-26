@@ -57,19 +57,19 @@ class Slash_Image_Bulk_Page {
 			'slash-image-settings',
 			SLASH_IMAGE_URL . 'admin/css/settings.css',
 			array( 'dashicons' ),
-			SLASH_IMAGE_VERSION
+			Slash_Image::asset_version( 'admin/css/settings.css' )
 		);
 		wp_enqueue_style(
 			'slash-image-bulk',
 			SLASH_IMAGE_URL . 'admin/css/bulk.css',
 			array( 'slash-image-settings' ),
-			SLASH_IMAGE_VERSION
+			Slash_Image::asset_version( 'admin/css/bulk.css' )
 		);
 		wp_enqueue_script(
 			'slash-image-bulk',
 			SLASH_IMAGE_URL . 'admin/js/bulk.js',
 			array(),
-			SLASH_IMAGE_VERSION,
+			Slash_Image::asset_version( 'admin/js/bulk.js' ),
 			true
 		);
 

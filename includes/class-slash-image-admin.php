@@ -124,7 +124,7 @@ class Slash_Image_Admin {
 				'slash-image-notice',
 				SLASH_IMAGE_URL . 'admin/js/notice.js',
 				array(),
-				SLASH_IMAGE_VERSION,
+				Slash_Image::asset_version( 'admin/js/notice.js' ),
 				true
 			);
 			// ajax_url for the account-error notice's dismiss POST (the nonce
@@ -150,7 +150,7 @@ class Slash_Image_Admin {
 					'slash-image-notice-cleanup',
 					SLASH_IMAGE_URL . 'admin/js/notice-cleanup.js',
 					array(),
-					SLASH_IMAGE_VERSION,
+					Slash_Image::asset_version( 'admin/js/notice-cleanup.js' ),
 					true
 				);
 			}
@@ -166,14 +166,14 @@ class Slash_Image_Admin {
 				'slash-image-media-library',
 				SLASH_IMAGE_URL . 'admin/css/media-library.css',
 				array( 'dashicons' ),
-				SLASH_IMAGE_VERSION
+				Slash_Image::asset_version( 'admin/css/media-library.css' )
 			);
 			if ( in_array( $hook_suffix, array( 'upload.php', 'media-new.php', 'post.php', 'post-new.php' ), true ) ) {
 				wp_enqueue_script(
 					'slash-image-media-library',
 					SLASH_IMAGE_URL . 'admin/js/media-library.js',
 					array(),
-					SLASH_IMAGE_VERSION,
+					Slash_Image::asset_version( 'admin/js/media-library.js' ),
 					true
 				);
 				wp_localize_script(
@@ -222,14 +222,14 @@ class Slash_Image_Admin {
 			'slash-image-settings',
 			SLASH_IMAGE_URL . 'admin/css/settings.css',
 			array( 'dashicons' ),
-			SLASH_IMAGE_VERSION
+			Slash_Image::asset_version( 'admin/css/settings.css' )
 		);
 
 		wp_enqueue_script(
 			'slash-image-settings',
 			SLASH_IMAGE_URL . 'admin/js/settings.js',
 			array(),
-			SLASH_IMAGE_VERSION,
+			Slash_Image::asset_version( 'admin/js/settings.js' ),
 			true
 		);
 
@@ -344,7 +344,7 @@ class Slash_Image_Admin {
 			'slash-image-tools',
 			SLASH_IMAGE_URL . 'admin/js/tools.js',
 			array(),
-			SLASH_IMAGE_VERSION,
+			Slash_Image::asset_version( 'admin/js/tools.js' ),
 			true
 		);
 		wp_localize_script(

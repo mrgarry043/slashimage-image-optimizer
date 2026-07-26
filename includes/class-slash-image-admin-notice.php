@@ -60,7 +60,7 @@ class Slash_Image_Admin_Notice {
 			'slash-image-admin-notice',
 			SLASH_IMAGE_URL . 'admin/css/admin-notice.css',
 			array(),
-			SLASH_IMAGE_VERSION
+			Slash_Image::asset_version( 'admin/css/admin-notice.css' )
 		);
 	}
 
