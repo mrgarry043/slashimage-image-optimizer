@@ -364,7 +364,7 @@ class Slash_Image_Admin {
 					'warn_title'                => __( 'Before you migrate', 'slashimage-image-optimizer' ),
 					'warn_shortpixel'           => __( 'Keep ShortPixel installed until this finishes. Afterwards uninstall it normally - do NOT use its "Remove all data" tool, which deletes the WebP and AVIF files SlashImage links to.', 'slashimage-image-optimizer' ),
 					'note_imagify'              => __( "Imagify's own uninstall leaves its optimization data and image files in place, so no special order is needed.", 'slashimage-image-optimizer' ),
-					'note_no_backup'            => __( 'Migrated images have no SlashImage backup, so Restore and forced re-optimize stay unavailable for them until SlashImage optimizes them fresh.', 'slashimage-image-optimizer' ),
+					'note_no_backup'            => __( 'Migrated images have no SlashImage backup, so Restore and forced re-optimize are not available for them.', 'slashimage-image-optimizer' ),
 					'btn_scan'                  => __( 'Scan', 'slashimage-image-optimizer' ),
 					'btn_rescan'                => __( 'Scan again', 'slashimage-image-optimizer' ),
 					'btn_migrate'               => __( 'Migrate now', 'slashimage-image-optimizer' ),

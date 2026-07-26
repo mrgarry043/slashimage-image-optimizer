@@ -111,8 +111,12 @@
 	}
 
 	function noBackupNote() {
+		// No forward-promise here on purpose: there is currently no path that
+		// turns a migrated image back into a fully-ours one (plain optimize skips
+		// it as already optimized, --force skips it for having no backup). This
+		// copy changes when backup import ships.
 		return '<p class="slash-image-tools__note">' + esc( t( 'note_no_backup',
-			'Migrated images have no SlashImage backup, so Restore and forced re-optimize stay unavailable for them until SlashImage optimizes them fresh.' ) ) + '</p>';
+			'Migrated images have no SlashImage backup, so Restore and forced re-optimize are not available for them.' ) ) + '</p>';
 	}
 
 	function cardMarkup( card ) {
