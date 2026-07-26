@@ -684,15 +684,16 @@ class Slash_Image_CLI {
 		WP_CLI::log( sprintf( '  %-36s %d', 'Importable attachments:', $s['migrated'] ) );
 		WP_CLI::log( sprintf( '  %-36s %d', 'Already optimized by SlashImage:', $s['already_ours'] ) );
 		WP_CLI::log( sprintf( '  %-36s %d', 'Already migrated:', $s['already_migrated'] ) );
-		WP_CLI::log(
-			sprintf(
-				'  %-36s %d (of which reverted in %s: %d)',
-				'Skipped, not an importable status:',
-				$s['skipped_status'],
-				$label,
-				$s['skipped_restored']
-			)
-		);
+		WP_CLI::log( sprintf( '  %-36s %d', 'Skipped, not an importable status:', $s['skipped_status'] ) );
+		// Sub-counts, shown only by the source that has the concept — printing
+		// "reverted: 0" against Imagify (which cannot revert) would imply the
+		// migrator looked for something that does not exist.
+		if ( $s['skipped_restored'] > 0 ) {
+			WP_CLI::log( sprintf( '    %-34s %d', sprintf( 'of which reverted in %s:', $label ), $s['skipped_restored'] ) );
+		}
+		if ( $s['skipped_already_optimized'] > 0 ) {
+			WP_CLI::log( sprintf( '    %-34s %d', sprintf( 'of which %s judged already small:', $label ), $s['skipped_already_optimized'] ) );
+		}
 		WP_CLI::log( sprintf( '  %-36s %d', 'Skipped, unsupported type:', $s['skipped_unsupported_mime'] ) );
 		WP_CLI::log( sprintf( '  %-36s %d', 'Skipped, file missing on disk:', $s['skipped_file_missing'] ) );
 		WP_CLI::log( sprintf( '  %-36s %d', 'Skipped, no usable records:', $s['skipped_no_usable_rows'] ) );

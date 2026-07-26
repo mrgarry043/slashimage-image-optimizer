@@ -34,6 +34,7 @@ class Slash_Image_Migrate {
 	public static function adapters() {
 		return array(
 			'shortpixel' => 'Slash_Image_Migrate_Shortpixel',
+			'imagify'    => 'Slash_Image_Migrate_Imagify',
 		);
 	}
 
@@ -58,24 +59,29 @@ class Slash_Image_Migrate {
 	public static function stat_keys() {
 		return array(
 			// Scan outcomes.
-			'scanned'                  => 0,
-			'migrated'                 => 0,
-			'already_ours'             => 0,
-			'already_migrated'         => 0,
-			'skipped_status'           => 0,
-			'skipped_restored'         => 0,
-			'skipped_unsupported_mime' => 0,
-			'skipped_no_usable_rows'   => 0,
-			'skipped_file_missing'     => 0,
+			'scanned'                   => 0,
+			'migrated'                  => 0,
+			'already_ours'              => 0,
+			'already_migrated'          => 0,
+			'skipped_status'            => 0,
+			// Sub-counts of skipped_status. A source reports whichever it has:
+			// ShortPixel can revert an image (status 3); Imagify instead marks
+			// one it judged already small enough. Separate keys because
+			// collapsing them would print "reverted" for images nobody reverted.
+			'skipped_restored'          => 0,
+			'skipped_already_optimized' => 0,
+			'skipped_unsupported_mime'  => 0,
+			'skipped_no_usable_rows'    => 0,
+			'skipped_file_missing'      => 0,
 			// Next-gen claim outcomes.
-			'webp_linked'              => 0,
-			'avif_linked'              => 0,
-			'webp_already_present'     => 0,
-			'avif_already_present'     => 0,
-			'webp_missing'             => 0,
-			'avif_missing'             => 0,
-			'sentinel_skipped'         => 0,
-			'link_failed'              => 0,
+			'webp_linked'               => 0,
+			'avif_linked'               => 0,
+			'webp_already_present'      => 0,
+			'avif_already_present'      => 0,
+			'webp_missing'              => 0,
+			'avif_missing'              => 0,
+			'sentinel_skipped'          => 0,
+			'link_failed'               => 0,
 		);
 	}
 
