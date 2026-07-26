@@ -142,7 +142,7 @@ For general bugs, please open a thread on the plugin support forum. For security
 == Changelog ==
 
 = 1.1.1 =
-* Fix: "Re-optimize already optimized" (Bulk Optimize) and `wp slashimage optimize --force` now work. The original is restored from its backup first, then re-optimized, so images are never compressed twice. Images with no backup are skipped and reported.
+* Fix: re-optimizing already optimized images now works correctly. The original is restored from its backup first, so images are never compressed twice. Images without a backup are skipped and reported.
 
 = 1.1.0 =
 * New: WP-CLI support — manage optimization from the command line with `wp slashimage status`, `optimize [<ids>|--all] [--force]`, `restore [<ids>|--all] [--yes]`, and `cancel`. Useful for large libraries and hosts where WP-Cron is disabled.
