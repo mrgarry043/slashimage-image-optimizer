@@ -30,8 +30,10 @@ class Slash_Image_Media_Library {
 	// until the key is reconnected).
 	const STATUS_PAUSED          = 'paused';
 
-	const NOTICE_QUERY_VAR = 'slash_image_notice';
-	const NOTICE_COUNT_VAR = 'slash_image_count';
+	const NOTICE_QUERY_VAR   = 'slash_image_notice';
+	const NOTICE_COUNT_VAR   = 'slash_image_count';
+	const NOTICE_SKIPPED_VAR = 'slash_image_skipped';
+	const NOTICE_CAUSE_VAR   = 'slash_image_cause';
 
 	const ACTION_REOPTIMIZE = 'slash_image_reoptimize';
 	const ACTION_RESTORE    = 'slash_image_restore_one';
@@ -895,23 +897,66 @@ class Slash_Image_Media_Library {
 				// 504 well under the 500 cap). enqueue_restore() skips ids with no
 				// backup; the selected rows render the "Restoring…" pill and the
 				// column poll + worker kick drive completion in place.
-				$queued = 0;
+				$queued  = 0;
+				$skipped = array();
 				foreach ( $ids as $id ) {
 					if ( Slash_Image_Bulk_Processor::enqueue_restore( $id ) ) {
 						++$queued;
+					} else {
+						// enqueue_restore() returns false only when the attachment
+						// has no backup record, so this IS the skipped set. Keeping
+						// the ids (not just a count) lets the notice name the cause
+						// when they share one — see all_migrated() below.
+						$skipped[] = $id;
 					}
 				}
 
 				return add_query_arg(
 					array(
-						self::NOTICE_QUERY_VAR => 'restore_queued',
-						self::NOTICE_COUNT_VAR => $queued,
+						self::NOTICE_QUERY_VAR   => 'restore_queued',
+						self::NOTICE_COUNT_VAR   => $queued,
+						self::NOTICE_SKIPPED_VAR => count( $skipped ),
+						// Only ever set when EVERY skipped id was migrated from
+						// another optimizer, so the notice can state that as the
+						// reason without guessing. Mixed causes stay generic.
+						self::NOTICE_CAUSE_VAR   => self::all_migrated( $skipped ) ? 'migrated' : '',
 					),
 					$redirect_to
 				);
 		}
 
 		return $redirect_to;
+	}
+
+	/**
+	 * True when EVERY given attachment was migrated from another optimizer.
+	 *
+	 * Gates the one specific reason we can state honestly for "no backup":
+	 * migrated images never had a SlashImage backup, because we imported their
+	 * optimized state rather than optimizing them ourselves. The other causes
+	 * (backups disabled, a backup consumed by an earlier full restore, never
+	 * optimized by us) are not distinguishable here without reads we do not do.
+	 *
+	 * Deliberately all-or-nothing: with a mixed set the caller falls back to the
+	 * generic line rather than partially enumerating causes, which would either
+	 * mislead or turn into an unbounded list.
+	 *
+	 * Reads postmeta already primed by the list-table query, so this costs no
+	 * extra database round trip in the bulk-action request.
+	 *
+	 * @param array $ids Attachment IDs that were skipped.
+	 * @return bool False for an empty set — there is no shared cause to state.
+	 */
+	private static function all_migrated( array $ids ) {
+		if ( empty( $ids ) ) {
+			return false;
+		}
+		foreach ( $ids as $id ) {
+			if ( '' === (string) get_post_meta( (int) $id, Slash_Image_Migrate::META_MIGRATED_FROM, true ) ) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/* ── admin-post.php handlers (single-attachment) ──────────── */
