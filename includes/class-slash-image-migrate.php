@@ -73,7 +73,9 @@ class Slash_Image_Migrate {
 			'skipped_unsupported_mime'  => 0,
 			'skipped_no_usable_rows'    => 0,
 			'skipped_file_missing'      => 0,
-			// Next-gen claim outcomes.
+			// Next-gen claim outcomes. '_linked' is historical: nothing is
+			// created any more, so it counts siblings servable under the OTHER
+			// plugin's filename, which the resolver finds where they already sit.
 			'webp_linked'               => 0,
 			'avif_linked'               => 0,
 			'webp_already_present'      => 0,
@@ -81,7 +83,6 @@ class Slash_Image_Migrate {
 			'webp_missing'              => 0,
 			'avif_missing'              => 0,
 			'sentinel_skipped'          => 0,
-			'link_failed'               => 0,
 		);
 	}
 
@@ -242,6 +243,7 @@ class Slash_Image_Migrate {
 			}
 		}
 
+		self::note_foreign_variants( $stats, (bool) $dry_run );
 		self::flush_object_cache();
 
 		return array(
@@ -297,6 +299,13 @@ class Slash_Image_Migrate {
 					$stats[ $key ] += (int) $result['stats'][ $key ];
 				}
 			}
+
+			// Per batch, not once at the end, so a run that is killed part-way
+			// still leaves the flag set for the attachments it did import.
+			self::note_foreign_variants(
+				isset( $result['stats'] ) ? (array) $result['stats'] : array(),
+				$dry_run
+			);
 
 			if ( is_callable( $on_batch ) ) {
 				call_user_func( $on_batch, (int) ( $result['stats']['scanned'] ?? 0 ) );
@@ -363,6 +372,41 @@ class Slash_Image_Migrate {
 			);
 		}
 		return $out;
+	}
+
+	/**
+	 * Flag this site as holding next-gen variants under another optimizer's
+	 * filename, so the front-end resolver enables its single-extension fallback.
+	 *
+	 * Site-level and one-way: it records a fact about the FILES ON DISK, which
+	 * outlives the other plugin being deactivated or deleted, so it is never
+	 * derived from is_plugin_active() and is never cleared when that plugin
+	 * goes away. Only '_linked' counts — '_already_present' means the variant
+	 * sits at our own name, which needs no fallback.
+	 *
+	 * A dry run never sets it: a scan writes nothing.
+	 *
+	 * @param array $stats   Stats from one batch.
+	 * @param bool  $dry_run Scan only.
+	 * @return void
+	 */
+	private static function note_foreign_variants( array $stats, $dry_run ) {
+		if ( $dry_run ) {
+			return;
+		}
+
+		$foreign = (int) ( $stats['webp_linked'] ?? 0 ) + (int) ( $stats['avif_linked'] ?? 0 );
+		if ( $foreign < 1 ) {
+			return;
+		}
+
+		$option = Slash_Image_Variant_Resolver::FOREIGN_VARIANTS_OPTION;
+		if ( '1' === (string) get_option( $option, '' ) ) {
+			return;
+		}
+
+		// Autoloaded: the resolver reads it on every front-end request.
+		update_option( $option, '1', true );
 	}
 
 	/**

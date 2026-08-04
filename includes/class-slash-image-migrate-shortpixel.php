@@ -283,7 +283,7 @@ class Slash_Image_Migrate_Shortpixel implements Slash_Image_Migrate_Adapter {
 				: array( 'skipped_status' => 1 );
 		}
 
-		$plan = self::build_plan( $attachment_id, $usable, $dir, $dry_run );
+		$plan = self::build_plan( $attachment_id, $usable, $dir );
 		if ( empty( $plan['per_size'] ) ) {
 			return array( 'skipped_no_usable_rows' => 1 );
 		}
@@ -309,15 +309,15 @@ class Slash_Image_Migrate_Shortpixel implements Slash_Image_Migrate_Adapter {
 	 * Next-gen byte counts are NOT in the source — ShortPixel records the sibling
 	 * FILENAME only — so each is stat()ed on disk, which doubles as the existence
 	 * check. The claim pass runs here so its counters and the per-size webp/avif
-	 * figures come from the same verified file list.
+	 * figures come from the same verified file list. It is read-only, so a scan
+	 * and a real run produce identical claim figures.
 	 *
 	 * @param int    $attachment_id Attachment post ID.
 	 * @param array  $rows          SUCCESS rows.
 	 * @param string $dir           Directory holding the attachment's files.
-	 * @param bool   $dry_run       Scan only; the claim pass writes nothing.
 	 * @return array
 	 */
-	private static function build_plan( $attachment_id, array $rows, $dir, $dry_run ) {
+	private static function build_plan( $attachment_id, array $rows, $dir ) {
 		$per_size    = array();
 		$claim_stats = array();
 		$ts_latest   = 0;
@@ -363,7 +363,7 @@ class Slash_Image_Migrate_Shortpixel implements Slash_Image_Migrate_Adapter {
 			$extra = json_decode( (string) $row->extra_info, true );
 			if ( is_array( $extra ) && '' !== $source_file ) {
 				foreach ( array( 'webp', 'avif' ) as $format ) {
-					$claim = Slash_Image_Migrate_Claim::evaluate( $extra, $format, $dir, $source_file, $dry_run );
+					$claim = Slash_Image_Migrate_Claim::evaluate( $extra, $format, $dir, $source_file );
 					foreach ( $claim['stats'] as $skey => $sval ) {
 						$claim_stats[ $skey ] = ( isset( $claim_stats[ $skey ] ) ? $claim_stats[ $skey ] : 0 ) + (int) $sval;
 					}

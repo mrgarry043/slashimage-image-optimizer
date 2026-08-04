@@ -581,9 +581,10 @@ class Slash_Image_CLI {
 	/**
 	 * Import another image optimizer's state so its work counts as SlashImage's.
 	 *
-	 * Reads the other plugin's optimization records, writes the equivalent
-	 * SlashImage metadata, and claims its WebP/AVIF sibling files for our
-	 * <picture> rewriter by hardlinking them at the filenames we look for.
+	 * Reads the other plugin's optimization records and writes the equivalent
+	 * SlashImage metadata. Its WebP/AVIF sibling files are left exactly where
+	 * they are — our <picture> rewriter recognises that plugin's filenames and
+	 * serves them in place, so nothing is linked, copied, or renamed.
 	 *
 	 * Read-only with respect to the source plugin: its tables, settings, files
 	 * and backups are never written, moved, or deleted. Makes no API calls, so
@@ -700,15 +701,13 @@ class Slash_Image_CLI {
 
 		WP_CLI::log( '' );
 		WP_CLI::log( 'Next-gen siblings:' );
-		$verb = $dry_run ? 'to link' : 'linked';
-		WP_CLI::log( sprintf( '  %-36s %d', 'WebP ' . $verb . ':', $s['webp_linked'] ) );
-		WP_CLI::log( sprintf( '  %-36s %d', 'AVIF ' . $verb . ':', $s['avif_linked'] ) );
-		WP_CLI::log( sprintf( '  %-36s %d', 'Already present (left alone):', $s['webp_already_present'] + $s['avif_already_present'] ) );
+		// No file is created or moved: these are served in place, under whichever
+		// filename they already carry.
+		WP_CLI::log( sprintf( '  %-36s %d', 'WebP to serve from ' . $label . ':', $s['webp_linked'] ) );
+		WP_CLI::log( sprintf( '  %-36s %d', 'AVIF to serve from ' . $label . ':', $s['avif_linked'] ) );
+		WP_CLI::log( sprintf( '  %-36s %d', 'Already at our own filename:', $s['webp_already_present'] + $s['avif_already_present'] ) );
 		WP_CLI::log( sprintf( '  %-36s %d', 'Recorded but missing on disk:', $s['webp_missing'] + $s['avif_missing'] ) );
 		WP_CLI::log( sprintf( '  %-36s %d', 'Skipped, conversion was larger:', $s['sentinel_skipped'] ) );
-		if ( $s['link_failed'] > 0 ) {
-			WP_CLI::log( sprintf( '  %-36s %d', 'Could not be linked or copied:', $s['link_failed'] ) );
-		}
 		WP_CLI::log( '' );
 
 		if ( $dry_run ) {
@@ -716,20 +715,9 @@ class Slash_Image_CLI {
 			return;
 		}
 
-		if ( $s['link_failed'] > 0 ) {
-			WP_CLI::warning(
-				sprintf(
-					'Imported %d attachment(s), but %d sibling file(s) could not be linked or copied. Those images keep their imported savings but will not be served in a next-gen format until re-optimized.',
-					$s['migrated'],
-					$s['link_failed']
-				)
-			);
-			return;
-		}
-
 		WP_CLI::success(
 			sprintf(
-				'Imported %d attachment(s) from %s. Linked %d WebP and %d AVIF sibling file(s).',
+				'Imported %d attachment(s) from %s. %d WebP and %d AVIF file(s) will be served in place.',
 				$s['migrated'],
 				$label,
 				$s['webp_linked'],

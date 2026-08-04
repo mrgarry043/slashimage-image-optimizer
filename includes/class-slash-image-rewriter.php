@@ -158,10 +158,16 @@ class Slash_Image_Rewriter {
 			$webp_ok = $this->emit_webp || ( $is_gif && $this->emit_avif );
 
 			if ( $this->emit_avif && ! empty( $variants['avif'] ) ) {
-				$avif_srcset[] = self::format_srcset_entry( $entry['url'] . '.avif', $entry['descriptor'] );
+				$avif_srcset[] = self::format_srcset_entry(
+					self::variant_url( $entry['url'], 'avif', $variants['avif'] ),
+					$entry['descriptor']
+				);
 			}
 			if ( $webp_ok && ! empty( $variants['webp'] ) ) {
-				$webp_srcset[] = self::format_srcset_entry( $entry['url'] . '.webp', $entry['descriptor'] );
+				$webp_srcset[] = self::format_srcset_entry(
+					self::variant_url( $entry['url'], 'webp', $variants['webp'] ),
+					$entry['descriptor']
+				);
 			}
 		}
 
@@ -277,6 +283,26 @@ class Slash_Image_Rewriter {
 
 	private static function format_srcset_entry( $url, $descriptor ) {
 		return '' === $descriptor ? $url : $url . ' ' . $descriptor;
+	}
+
+	/**
+	 * Build the URL for a variant using the same naming convention the resolver
+	 * found it under on disk.
+	 *
+	 * A library migrated from another optimizer keeps its next-gen files at that
+	 * plugin's single-extension name, so emitting our double-extension URL for
+	 * them would point <source> at a file that does not exist.
+	 *
+	 * @param string $url    Original image URL.
+	 * @param string $format 'webp' or 'avif'.
+	 * @param string $naming Slash_Image_Variant_Resolver::NAMING_* value.
+	 * @return string
+	 */
+	private static function variant_url( $url, $format, $naming ) {
+		if ( Slash_Image_Variant_Resolver::NAMING_SINGLE === $naming ) {
+			return Slash_Image_Variant_Resolver::single_extension_name( $url, $format );
+		}
+		return $url . '.' . $format;
 	}
 
 	private static function decode_attr( $value ) {

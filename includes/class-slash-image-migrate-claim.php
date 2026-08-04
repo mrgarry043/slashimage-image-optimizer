@@ -1,20 +1,26 @@
 <?php
 /**
- * Claims another optimizer's next-gen sibling files for our <picture> rewriter.
+ * Records which of another optimizer's next-gen sibling files are servable.
  *
- * Our Slash_Image_Variant_Resolver probes DOUBLE-extension siblings — it takes
- * the live file's full path including extension and appends '.webp' / '.avif'
- * (photo.jpg -> photo.jpg.webp). ShortPixel's default is SINGLE extension
- * (photo.jpg -> photo.webp), so its files exist but our rewriter never finds
- * them. Rather than re-encoding, we place a HARDLINK at the name we probe,
- * pointing at their file: one inode, no extra disk, no second copy to keep in
- * sync. Where hardlinks are unavailable (cross-device, restrictive host) we fall
- * back to copy().
+ * READ-ONLY, and deliberately so. Nothing here creates, moves, or deletes a
+ * file — it only reports what exists and how big it is, so the migration can
+ * write honest byte figures into our own postmeta.
  *
- * Deliberately serving-only. This writes nothing restore-adjacent: no
- * _slash_image_backup, no metadata about originals. A hardlinked variant is a
- * delivery optimization, never a recovery point — and the source file remains
- * entirely ShortPixel's to manage. We never rename, move, modify, or delete it.
+ * Serving those files is the resolver's job, not ours.
+ * Slash_Image_Variant_Resolver probes our DOUBLE-extension name first
+ * (photo.jpg -> photo.jpg.avif) and falls back to the SINGLE-extension name
+ * ShortPixel writes by default (photo.jpg -> photo.avif), so a migrated file is
+ * found where it already sits.
+ *
+ * This replaced a hardlink pass that materialized our name pointing at their
+ * inode. It was removed for two reasons: `link` and `symlink` are in
+ * disable_functions on many hosts (a PHP 8 disabled function throws Error,
+ * which @ does NOT suppress, so @link() was an uncaught fatal that killed the
+ * request before the copy() fallback could run) — and, more fundamentally, we
+ * should not be writing into another plugin's file tree at all.
+ *
+ * The source files remain entirely the other plugin's to manage. We never
+ * rename, move, modify, or delete them.
  *
  * @package SlashImage
  */
@@ -49,16 +55,14 @@ class Slash_Image_Migrate_Claim {
 	 * @param string $dir         Trailing-slashed directory of the attachment's files.
 	 * @param string $source_file Absolute path of the live file for this size.
 	 * @return array {
-	 *     @type int    $bytes       Sibling size in bytes, 0 when nothing was claimed.
-	 *     @type string $link_target The double-extension path, '' when not applicable.
-	 *     @type array  $stats       Stat deltas for Slash_Image_Migrate.
+	 *     @type int   $bytes Sibling size in bytes, 0 when nothing is servable.
+	 *     @type array $stats Stat deltas for Slash_Image_Migrate.
 	 * }
 	 */
-	public static function evaluate( array $extra, $format, $dir, $source_file, $dry_run = false ) {
+	public static function evaluate( array $extra, $format, $dir, $source_file ) {
 		$none = array(
-			'bytes'       => 0,
-			'link_target' => '',
-			'stats'       => array(),
+			'bytes' => 0,
+			'stats' => array(),
 		);
 
 		if ( ! isset( $extra[ $format ] ) ) {
@@ -81,7 +85,7 @@ class Slash_Image_Migrate_Claim {
 			return $none;
 		}
 
-		return self::claim_at( $dir . $basename, $source_file . '.' . $format, $format, $dry_run );
+		return self::claim_at( $dir . $basename, $source_file . '.' . $format, $format );
 	}
 
 	/**
@@ -89,110 +93,66 @@ class Slash_Image_Migrate_Claim {
 	 * rule we probe, rather than recorded.
 	 *
 	 * Imagify's imagify_path_to_nextgen() appends to the full path including
-	 * extension (photo.jpg -> photo.jpg.webp) — byte-identical to what
-	 * Slash_Image_Variant_Resolver looks for. So there is nothing to link: the
-	 * file either already sits at our probe name or was never generated. The
-	 * shared claim_at() handles both, which is why this reports through the same
-	 * counters instead of a parallel vocabulary.
+	 * extension (photo.jpg -> photo.jpg.webp) — byte-identical to the name
+	 * Slash_Image_Variant_Resolver probes first. So the file either already sits
+	 * at our name or was never generated. The shared claim_at() handles both,
+	 * which is why this reports through the same counters instead of a parallel
+	 * vocabulary.
 	 *
 	 * Deliberately NOT expressed by faking a recorded-basename array for
-	 * evaluate(): that would report a link where none was needed and put a
-	 * fiction in the stats.
+	 * evaluate(): that would report a foreign-named file where none exists and
+	 * put a fiction in the stats.
 	 *
 	 * @param string $format      'webp' or 'avif'.
 	 * @param string $source_file Absolute path of the live file for this size.
-	 * @param bool   $dry_run     Scan only.
 	 * @return array Same shape as evaluate().
 	 */
-	public static function evaluate_derived( $format, $source_file, $dry_run = false ) {
+	public static function evaluate_derived( $format, $source_file ) {
 		$target = $source_file . '.' . $format;
-		return self::claim_at( $target, $target, $format, $dry_run );
+		return self::claim_at( $target, $target, $format );
 	}
 
 	/**
-	 * Shared resolution for both entry points.
+	 * Shared resolution for both entry points. Reports only; writes nothing.
 	 *
-	 * Order matters: an existing target is reported as already-present BEFORE
-	 * the source file is examined, because once the variant sits at the name we
-	 * probe it is servable regardless of what became of the file it came from —
-	 * and because we must never overwrite it.
+	 * Order matters: our own name is checked BEFORE the other plugin's, matching
+	 * the order Slash_Image_Variant_Resolver::locate() probes at serve time, so
+	 * the bytes recorded here are the bytes that will actually be delivered.
 	 *
 	 * For a derived-name source $their_file and $target are the same path, so
-	 * this collapses to "present, or never generated" with no link step.
+	 * this collapses to "present, or never generated".
+	 *
+	 * The '_linked' stat key is historical: it now counts siblings servable at
+	 * the OTHER plugin's name, with nothing created. It is kept because the key
+	 * is shared with the CLI report and the Tools tab, and both already describe
+	 * it to users as files to serve.
 	 *
 	 * @param string $their_file Existing sibling belonging to the other plugin.
-	 * @param string $target     Double-extension path our rewriter probes.
+	 * @param string $target     Double-extension path we would write ourselves.
 	 * @param string $format     'webp' or 'avif'.
-	 * @param bool   $dry_run    Scan only.
 	 * @return array
 	 */
-	private static function claim_at( $their_file, $target, $format, $dry_run ) {
+	private static function claim_at( $their_file, $target, $format ) {
 		if ( file_exists( $target ) ) {
 			return array(
-				'bytes'       => (int) filesize( $target ),
-				'link_target' => '',
-				'stats'       => array( $format . '_already_present' => 1 ),
+				'bytes' => (int) filesize( $target ),
+				'stats' => array( $format . '_already_present' => 1 ),
 			);
 		}
 
 		// The database records what was written, not what survived. Verify.
 		if ( ! is_readable( $their_file ) ) {
 			return array(
-				'bytes'       => 0,
-				'link_target' => '',
-				'stats'       => array( $format . '_missing' => 1 ),
+				'bytes' => 0,
+				'stats' => array( $format . '_missing' => 1 ),
 			);
 		}
 
-		$bytes = (int) filesize( $their_file );
-
-		if ( $dry_run ) {
-			// Report what a real run would link, without touching the filesystem.
-			return array(
-				'bytes'       => $bytes,
-				'link_target' => $target,
-				'stats'       => array( $format . '_linked' => 1 ),
-			);
-		}
-
-		if ( self::place( $their_file, $target ) ) {
-			return array(
-				'bytes'       => $bytes,
-				'link_target' => $target,
-				'stats'       => array( $format . '_linked' => 1 ),
-			);
-		}
-
+		// Servable in place, under the other plugin's name. Nothing to create:
+		// the resolver's single-extension fallback finds it where it already is.
 		return array(
-			'bytes'       => 0,
-			'link_target' => '',
-			'stats'       => array( 'link_failed' => 1 ),
+			'bytes' => (int) filesize( $their_file ),
+			'stats' => array( $format . '_linked' => 1 ),
 		);
-	}
-
-	/**
-	 * Place $target as a hardlink to $source, falling back to a copy.
-	 *
-	 * link() fails across filesystems and on hosts that disable it; a copy is
-	 * correct in both cases, just uses the disk. Both are additive — the source
-	 * is never modified.
-	 *
-	 * @param string $source Existing file (belongs to the other plugin).
-	 * @param string $target Path to create.
-	 * @return bool
-	 */
-	private static function place( $source, $target ) {
-		$dir = dirname( $target );
-		if ( ! is_dir( $dir ) || ! wp_is_writable( $dir ) ) {
-			return false;
-		}
-
-		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- link() warns on cross-device / disabled-function hosts; the copy() fallback is the handler.
-		if ( @link( $source, $target ) ) {
-			return true;
-		}
-
-		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- a failed copy is reported through the return value.
-		return (bool) @copy( $source, $target );
 	}
 }

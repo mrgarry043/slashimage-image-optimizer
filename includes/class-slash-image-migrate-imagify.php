@@ -161,7 +161,7 @@ class Slash_Image_Migrate_Imagify implements Slash_Image_Migrate_Adapter {
 			return array( 'skipped_file_missing' => 1 );
 		}
 
-		$plan = self::build_plan( $attachment_id, $data['sizes'], $attached, $dry_run );
+		$plan = self::build_plan( $attachment_id, $data['sizes'], $attached );
 		if ( empty( $plan['per_size'] ) ) {
 			return array( 'skipped_no_usable_rows' => 1 );
 		}
@@ -195,10 +195,9 @@ class Slash_Image_Migrate_Imagify implements Slash_Image_Migrate_Adapter {
 	 * @param int    $attachment_id Attachment post ID.
 	 * @param array  $sizes         _imagify_data['sizes'].
 	 * @param string $attached      Absolute path of the full-size file.
-	 * @param bool   $dry_run       Scan only.
 	 * @return array
 	 */
-	private static function build_plan( $attachment_id, array $sizes, $attached, $dry_run ) {
+	private static function build_plan( $attachment_id, array $sizes, $attached ) {
 		$meta     = wp_get_attachment_metadata( $attachment_id );
 		$dir      = trailingslashit( dirname( $attached ) );
 		$full_key = Slash_Image_Media_Handler::FULL_SIZE_KEY;
@@ -250,7 +249,7 @@ class Slash_Image_Migrate_Imagify implements Slash_Image_Migrate_Adapter {
 					if ( ! self::has_nextgen( $sizes, $size_key, $format ) ) {
 						continue;
 					}
-					$claim = Slash_Image_Migrate_Claim::evaluate_derived( $format, $source_file, $dry_run );
+					$claim = Slash_Image_Migrate_Claim::evaluate_derived( $format, $source_file );
 					foreach ( $claim['stats'] as $skey => $sval ) {
 						$claim_stats[ $skey ] = ( isset( $claim_stats[ $skey ] ) ? $claim_stats[ $skey ] : 0 ) + (int) $sval;
 					}
