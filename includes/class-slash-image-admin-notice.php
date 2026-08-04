@@ -33,10 +33,11 @@ class Slash_Image_Admin_Notice {
 	/**
 	 * Enqueue the notice stylesheet, gated to the same condition render() uses
 	 * to print the styled "needs a key" notice: a manage_options user, on a
-	 * plugin-relevant screen, while disconnected. The account-error notice uses
-	 * core notice-error markup and needs no custom CSS, so mirroring the
-	 * disconnected gate loads the stylesheet exactly on the requests that emit
-	 * the .slash-image-admin-notice markup.
+	 * plugin-relevant screen other than the plugin's own settings page, while
+	 * disconnected. The account-error notice uses core notice-error markup and
+	 * needs no custom CSS, so mirroring the disconnected gate loads the
+	 * stylesheet exactly on the requests that emit the .slash-image-admin-notice
+	 * markup.
 	 */
 	public function enqueue_assets() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -47,7 +48,15 @@ class Slash_Image_Admin_Notice {
 			return;
 		}
 
-		if ( ! self::is_plugin_relevant_screen( get_current_screen() ) ) {
+		$screen = get_current_screen();
+		if ( ! self::is_plugin_relevant_screen( $screen ) ) {
+			return;
+		}
+
+		// Mirror render()'s settings-screen suppression: the setup notice is not
+		// printed there, so its stylesheet must not be enqueued there either.
+		// Passing the gate above guarantees $screen is a WP_Screen.
+		if ( self::settings_screen_id() === $screen->id ) {
 			return;
 		}
 
@@ -65,6 +74,17 @@ class Slash_Image_Admin_Notice {
 	}
 
 	/**
+	 * The plugin settings page's registered screen ID.
+	 *
+	 * Registered via add_media_page(), which produces the `media_page_` prefix.
+	 *
+	 * @return string
+	 */
+	public static function settings_screen_id() {
+		return 'media_page_' . Slash_Image_Admin::MENU_SLUG;
+	}
+
+	/**
 	 * Whether the persistent connection notices should render on this screen.
 	 * True on the Media library (upload.php), the attachment edit screen, the
 	 * plugin Settings page, the Bulk Optimize page, the Dashboard (index.php),
@@ -79,7 +99,7 @@ class Slash_Image_Admin_Notice {
 		}
 
 		// The two plugin admin pages, by their registered screen IDs.
-		$settings_id = 'media_page_' . Slash_Image_Admin::MENU_SLUG;
+		$settings_id = self::settings_screen_id();
 		$bulk_id     = 'media_page_' . Slash_Image_Bulk_Page::MENU_SLUG;
 		if ( $screen->id === $settings_id || $screen->id === $bulk_id ) {
 			return true;
@@ -127,6 +147,16 @@ class Slash_Image_Admin_Notice {
 		// notice, a keyless site shows only the cream setup notice, a healthy
 		// connection shows neither.
 		if ( $account_rendered ) {
+			return;
+		}
+
+		// The setup notice is redundant on the plugin's own settings page: the API
+		// Key field is the first panel, a disconnected site opens straight onto the
+		// Settings tab, and the header pill already reads "Not configured" on every
+		// tab. Rendering it there only pushes the settings card down. The
+		// invalid-key and credits notices above are NOT suppressed — those are
+		// states the pill does not distinguish.
+		if ( self::settings_screen_id() === $screen->id ) {
 			return;
 		}
 
