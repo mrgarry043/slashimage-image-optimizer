@@ -50,7 +50,7 @@ class Slash_Image_Migrate_Imagify implements Slash_Image_Migrate_Adapter {
 			return array(
 				'ok'      => false,
 				'code'    => 'no_data',
-				'message' => 'No Imagify data found on this site. Nothing to import.',
+				'message' => __( 'No Imagify data was found on this site. There is nothing to import.', 'slashimage-image-optimizer' ),
 			);
 		}
 

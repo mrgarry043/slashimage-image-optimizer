@@ -93,13 +93,13 @@ class Slash_Image_Migrate_Shortpixel implements Slash_Image_Migrate_Adapter {
 				return array(
 					'ok'      => false,
 					'code'    => 'legacy_format',
-					'message' => 'This site has ShortPixel data in the pre-5.0 format, stored inside _wp_attachment_metadata instead of a database table. The migrator cannot read that shape. Run ShortPixel\'s own "migrate optimization data" tool first, then re-run this command.',
+					'message' => __( 'This site\'s ShortPixel data is in an older format that SlashImage cannot read. Run ShortPixel\'s own "Migrate optimization data" tool first, then scan again.', 'slashimage-image-optimizer' ),
 				);
 			}
 			return array(
 				'ok'      => false,
 				'code'    => 'no_table',
-				'message' => sprintf( 'No ShortPixel data found: the table %s does not exist on this site.', self::table() ),
+				'message' => __( 'No ShortPixel data was found on this site.', 'slashimage-image-optimizer' ),
 			);
 		}
 
@@ -108,13 +108,13 @@ class Slash_Image_Migrate_Shortpixel implements Slash_Image_Migrate_Adapter {
 				return array(
 					'ok'      => false,
 					'code'    => 'legacy_format',
-					'message' => 'ShortPixel\'s table exists but is empty, while attachments still carry pre-5.0 ShortPixel data inside _wp_attachment_metadata. The migrator cannot read that shape. Run ShortPixel\'s own "migrate optimization data" tool first, then re-run this command.',
+					'message' => __( 'ShortPixel\'s optimization data is in an older format that SlashImage cannot read. Run ShortPixel\'s own "Migrate optimization data" tool first, then scan again.', 'slashimage-image-optimizer' ),
 				);
 			}
 			return array(
 				'ok'      => false,
 				'code'    => 'empty',
-				'message' => 'ShortPixel is present but has no successfully optimized images to import.',
+				'message' => __( 'ShortPixel is installed but has no optimized images to import.', 'slashimage-image-optimizer' ),
 			);
 		}
 

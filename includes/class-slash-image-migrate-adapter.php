@@ -44,7 +44,10 @@ interface Slash_Image_Migrate_Adapter {
 	 *     @type bool   $ok      True when migrate_batch() may run.
 	 *     @type string $code    Machine code ('' when ok): no_table |
 	 *                           legacy_format | empty.
-	 *     @type string $message Operator-facing explanation (plain English).
+	 *     @type string $message Translated, user-facing explanation. Rendered on
+	 *                           the Tools card AND printed by the CLI, so it must
+	 *                           read for both: no table names, no meta keys, and
+	 *                           no instruction naming one interface or the other.
 	 * }
 	 */
 	public static function detect();

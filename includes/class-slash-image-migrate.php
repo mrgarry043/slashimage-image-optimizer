@@ -104,7 +104,7 @@ class Slash_Image_Migrate {
 			return array(
 				'ok'      => false,
 				'code'    => 'multisite',
-				'message' => 'Multisite is not supported by the migrator. Optimization state is per-site, and a network-wide import would need per-site review; run the migration per site with a site-scoped WP-CLI invocation once that is supported.',
+				'message' => __( 'Migration is not available on multisite networks yet, because optimization data is stored separately for each site.', 'slashimage-image-optimizer' ),
 			);
 		}
 
@@ -185,7 +185,7 @@ class Slash_Image_Migrate {
 		if ( '' === $adapter ) {
 			return $fail(
 				'unknown_source',
-				sprintf( 'Unknown migration source "%s". Available: %s.', $slug, implode( ', ', array_keys( self::adapters() ) ) )
+				__( 'That migration source is not available.', 'slashimage-image-optimizer' )
 			);
 		}
 

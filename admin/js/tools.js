@@ -151,19 +151,19 @@
 	function scanReport( s ) {
 		var html = '<div class="slash-image-tools__report">';
 		html += statRow( t( 'stat_scanned', 'Images examined' ), s.scanned, 'is-total' );
-		html += statRow( t( 'stat_importable', 'Importable' ), s.migrated );
+		html += statRow( t( 'stat_importable', 'Ready to migrate' ), s.migrated );
 		html += statRow( t( 'stat_already_migrated', 'Already migrated' ), s.already_migrated );
 		html += statRow( t( 'stat_already_ours', 'Already optimized by SlashImage' ), s.already_ours );
-		html += statRow( t( 'stat_skipped_status', 'Skipped — not importable' ), s.skipped_status );
+		html += statRow( t( 'stat_skipped_status', 'Skipped - cannot be migrated' ), s.skipped_status );
 		if ( s.skipped_restored > 0 ) {
-			html += statRow( t( 'stat_skipped_restored', '— of which reverted' ), s.skipped_restored );
+			html += statRow( t( 'stat_skipped_restored', '- of which reverted' ), s.skipped_restored );
 		}
 		if ( s.skipped_already_optimized > 0 ) {
-			html += statRow( t( 'stat_skipped_already', '— of which already small enough' ), s.skipped_already_optimized );
+			html += statRow( t( 'stat_skipped_already', '- of which already small enough' ), s.skipped_already_optimized );
 		}
-		html += statRow( t( 'stat_skipped_mime', 'Skipped — unsupported type' ), s.skipped_unsupported_mime );
-		html += statRow( t( 'stat_skipped_missing', 'Skipped — file missing' ), s.skipped_file_missing );
-		html += statRow( t( 'stat_skipped_no_data', 'Skipped — no usable data' ), s.skipped_no_usable_rows );
+		html += statRow( t( 'stat_skipped_mime', 'Skipped - unsupported type' ), s.skipped_unsupported_mime );
+		html += statRow( t( 'stat_skipped_missing', 'Skipped - file missing' ), s.skipped_file_missing );
+		html += statRow( t( 'stat_skipped_no_data', 'Skipped - no usable data' ), s.skipped_no_usable_rows );
 
 		html += statHeading( t( 'stat_heading_files', 'WebP and AVIF files' ) );
 		html += statRow( t( 'stat_webp', 'WebP files to serve' ), s.webp_linked + s.webp_already_present );
@@ -171,10 +171,10 @@
 			html += statRow( t( 'stat_avif', 'AVIF files to serve' ), s.avif_linked + s.avif_already_present );
 		}
 		if ( s.webp_missing + s.avif_missing > 0 ) {
-			html += statRow( t( 'stat_missing_disk', 'Recorded but missing on disk' ), s.webp_missing + s.avif_missing );
+			html += statRow( t( 'stat_missing_disk', 'Files no longer on the server' ), s.webp_missing + s.avif_missing );
 		}
 		if ( s.sentinel_skipped > 0 ) {
-			html += statRow( t( 'stat_sentinel', 'Skipped — no smaller version existed' ), s.sentinel_skipped );
+			html += statRow( t( 'stat_sentinel', 'Skipped - no smaller version existed' ), s.sentinel_skipped );
 		}
 		html += '</div>';
 		return html;
@@ -275,7 +275,7 @@
 			body += '<div class="slash-image-alert is-warning slash-image-alert--inline">' +
 				'<strong>' + esc( t( 'warn_title', 'Before you migrate' ) ) + '</strong> ' +
 				esc( t( 'warn_shortpixel',
-					'Keep ShortPixel installed until this finishes. Afterwards uninstall it normally — do NOT use its "Remove all data" tool, which deletes the WebP and AVIF files SlashImage links to.' ) ) +
+					'Keep ShortPixel installed until this finishes. Afterwards you can uninstall it normally - but do NOT use its "Remove all data" tool. That permanently deletes the WebP and AVIF files on your server, which SlashImage now serves to your visitors directly. They cannot be recovered.' ) ) +
 				'</div>';
 		}
 		if ( card.detected && 'imagify' === card.source ) {
