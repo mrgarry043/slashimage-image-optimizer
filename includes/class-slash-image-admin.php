@@ -373,6 +373,8 @@ class Slash_Image_Admin {
 					/* translators: %1$d: images examined so far. %2$d: total images. */
 					'progress'                  => __( '%1$d of %2$d examined', 'slashimage-image-optimizer' ),
 					'failed'                    => __( 'That did not work. Please reload and try again.', 'slashimage-image-optimizer' ),
+					'failed_network'            => __( 'Could not reach the server. Check your connection and try again.', 'slashimage-image-optimizer' ),
+					'failed_scan_required'      => __( 'That scan has expired. Please scan again before migrating.', 'slashimage-image-optimizer' ),
 					'stat_importable'           => __( 'Importable', 'slashimage-image-optimizer' ),
 					'stat_already_migrated'     => __( 'Already migrated', 'slashimage-image-optimizer' ),
 					'stat_already_ours'         => __( 'Already optimized by SlashImage', 'slashimage-image-optimizer' ),

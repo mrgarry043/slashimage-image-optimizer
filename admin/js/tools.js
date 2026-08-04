@@ -18,6 +18,16 @@
 	/** Per-source client state: cursor, accumulated stats, scan token. */
 	var runs = {};
 
+	/**
+	 * Per-request ceiling. A batch is bounded at 200 attachments and measures
+	 * well under two seconds, so this is roughly ninety times the observed cost —
+	 * high enough never to cut short a slow host mid-batch, and above the common
+	 * 60-second gateway default so the server's own error surfaces first. It
+	 * exists only so a connection that is dropped without any response ends in a
+	 * visible message instead of a progress bar that never moves again.
+	 */
+	var REQUEST_TIMEOUT_MS = 120000;
+
 	function t( key, fallback ) {
 		return Object.prototype.hasOwnProperty.call( i18n, key ) ? i18n[ key ] : fallback;
 	}
@@ -29,6 +39,15 @@
 		} );
 	}
 
+	/**
+	 * POST one action. Never rejects: every failure resolves to a result object
+	 * so a caller can render it. A rejected promise here used to escape
+	 * unhandled, leaving the card stuck on its progress bar with no message.
+	 *
+	 * `transport` separates "the request never completed" (dropped connection,
+	 * timeout, or a server-side fatal whose body is not JSON) from "the server
+	 * answered and refused", so only the latter shows a server-supplied message.
+	 */
 	function post( action, data ) {
 		var body = new URLSearchParams();
 		body.set( 'action', action );
@@ -36,16 +55,55 @@
 		Object.keys( data || {} ).forEach( function ( k ) {
 			body.set( k, data[ k ] );
 		} );
-		return fetch( cfg.ajax_url, {
+
+		var controller = ( 'undefined' !== typeof AbortController ) ? new AbortController() : null;
+		var timer = controller
+			? window.setTimeout( function () { controller.abort(); }, REQUEST_TIMEOUT_MS )
+			: null;
+
+		var opts = {
 			method: 'POST',
 			credentials: 'same-origin',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 			body: body.toString()
-		} ).then( function ( r ) {
-			return r.json().then( function ( j ) {
-				return { ok: r.ok && j && j.success, payload: ( j && j.data ) || {} };
-			} );
+		};
+		if ( controller ) { opts.signal = controller.signal; }
+
+		return fetch( cfg.ajax_url, opts ).then( function ( r ) {
+			return r.json().then(
+				function ( j ) {
+					return {
+						ok: r.ok && j && j.success,
+						payload: ( j && j.data ) || {},
+						transport: false
+					};
+				},
+				function () {
+					// Body was not JSON — a server-side fatal, not a clean refusal.
+					return { ok: false, payload: {}, transport: true };
+				}
+			);
+		} ).catch( function () {
+			// Network failure, or our own abort once REQUEST_TIMEOUT_MS elapsed.
+			return { ok: false, payload: {}, transport: true };
+		} ).then( function ( res ) {
+			if ( timer ) { window.clearTimeout( timer ); }
+			return res;
 		} );
+	}
+
+	/** Turn a failed result into something a person can act on. */
+	function messageFor( res ) {
+		if ( res.transport ) {
+			return t( 'failed_network', 'Could not reach the server. Check your connection and try again.' );
+		}
+		if ( res.payload && res.payload.message ) {
+			return res.payload.message;
+		}
+		if ( res.payload && 'scan_required' === res.payload.code ) {
+			return t( 'failed_scan_required', 'That scan has expired. Please scan again before migrating.' );
+		}
+		return t( 'failed', 'That did not work. Please reload and try again.' );
 	}
 
 	function blankStats() {
@@ -148,6 +206,12 @@
 			return body;
 		}
 
+		// Rendered here rather than beside the scan report, because several card
+		// states return early below and a failure has to be visible in all of them.
+		if ( st.error ) {
+			body += '<div class="slash-image-alert is-error slash-image-alert--inline">' + esc( st.error ) + '</div>';
+		}
+
 		// Done state — no scan in progress and everything already imported.
 		if ( card.migrated > 0 && ! st.stats && ! st.busy ) {
 			body += '<p class="slash-image-tools__done">' + esc(
@@ -203,9 +267,14 @@
 		// already migrated or already ours — so the plugin is safe to turn off,
 		// same as the done state. With work outstanding, Migrate now is the
 		// primary action and deactivating would strip the source mid-job.
-		var scanFoundNothing = !! st.stats && 0 === st.stats.migrated;
+		//
+		// A FAILED run must never qualify: its stats are still the zeroed
+		// starting set, which would otherwise read as "nothing to import" and
+		// offer to deactivate the very plugin whose data has not been imported.
+		var scanFoundNothing = !! st.stats && ! st.error && 0 === st.stats.migrated;
 
-		if ( st.stats ) {
+		// Counts from an interrupted run are not a result worth showing.
+		if ( st.stats && ! st.error ) {
 			body += scanReport( st.stats );
 			body += noBackupNote();
 		}
@@ -262,7 +331,7 @@
 		} ).then( function ( res ) {
 			if ( ! res.ok ) {
 				st.busy = false;
-				st.error = res.payload.message || t( 'failed', 'That did not work. Please reload and try again.' );
+				st.error = messageFor( res );
 				render();
 				return;
 			}
@@ -291,10 +360,19 @@
 	}
 
 	function start( source, action ) {
-		runs[ source ] = { cursor: 0, stats: blankStats(), busy: true, token: runs[ source ] ? runs[ source ].token : '' };
+		runs[ source ] = { cursor: 0, stats: blankStats(), busy: true, error: '', token: runs[ source ] ? runs[ source ].token : '' };
 		if ( 'slash_image_migrate_scan' === action ) { runs[ source ].token = ''; }
 		render();
-		loop( source, action );
+		// post() resolves on every failure, so this only fires if our own
+		// rendering throws. Without it such a throw leaves busy === true and the
+		// card sits on its progress bar for good.
+		loop( source, action ).catch( function () {
+			var st = runs[ source ];
+			if ( ! st ) { return; }
+			st.busy = false;
+			st.error = t( 'failed', 'That did not work. Please reload and try again.' );
+			render();
+		} );
 	}
 
 	/**
@@ -328,12 +406,17 @@
 		loaded = true;
 		post( 'slash_image_migrate_detect', {} ).then( function ( res ) {
 			if ( ! res.ok ) {
-				root.innerHTML = '<p class="slash-image-tools__muted">' +
-					esc( t( 'failed', 'That did not work. Please reload and try again.' ) ) + '</p>';
+				root.innerHTML = '<div class="slash-image-alert is-error">' + esc( messageFor( res ) ) + '</div>';
+				// Let the user try again without reloading the whole page.
+				loaded = false;
 				return;
 			}
 			cards = res.payload.cards || [];
 			render();
+		} ).catch( function () {
+			root.innerHTML = '<div class="slash-image-alert is-error">' +
+				esc( t( 'failed', 'That did not work. Please reload and try again.' ) ) + '</div>';
+			loaded = false;
 		} );
 	}
 
@@ -353,8 +436,19 @@
 				var c = cardFor( source );
 				if ( ! window.confirm( ( t( 'confirm_deactivate', 'Deactivate %s now?' ) ).replace( '%s', c ? c.label : source ) ) ) { return; }
 				btn.disabled = true;
-				post( 'slash_image_migrate_deactivate', { source: source } ).then( function ( res ) {
-					if ( ! res.ok ) { btn.disabled = false; return; }
+				post( 'slash_image_migrate_deactivate', { source: source } ).catch( function () {
+					return { ok: false, payload: {}, transport: true };
+				} ).then( function ( res ) {
+					if ( ! res.ok ) {
+						btn.disabled = false;
+						var failed = cardFor( source );
+						if ( failed ) {
+							runs[ source ] = runs[ source ] || {};
+							runs[ source ].error = messageFor( res );
+							render();
+						}
+						return;
+					}
 					// The card is about to stop qualifying for display (cards are
 					// active-plugins-only), so retire it here rather than leaving a
 					// dead card behind or forcing a full page reload. Brief
