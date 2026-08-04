@@ -112,7 +112,7 @@
 			skipped_status: 0, skipped_restored: 0, skipped_already_optimized: 0,
 			skipped_unsupported_mime: 0, skipped_no_usable_rows: 0, skipped_file_missing: 0,
 			webp_linked: 0, avif_linked: 0, webp_already_present: 0, avif_already_present: 0,
-			webp_missing: 0, avif_missing: 0, sentinel_skipped: 0, link_failed: 0
+			webp_missing: 0, avif_missing: 0, sentinel_skipped: 0
 		};
 	}
 
@@ -125,13 +125,32 @@
 
 	/* ── Rendering ──────────────────────────────────── */
 
-	function statRow( label, value ) {
-		return '<div class="slash-image-tools__stat"><span>' + esc( label ) +
-			'</span><strong>' + esc( value ) + '</strong></div>';
+	function statRow( label, value, modifier ) {
+		return '<div class="slash-image-tools__stat' + ( modifier ? ' ' + modifier : '' ) +
+			'"><span>' + esc( label ) + '</span><strong>' + esc( value ) + '</strong></div>';
 	}
 
+	function statHeading( label ) {
+		return '<div class="slash-image-tools__stat-heading">' + esc( label ) + '</div>';
+	}
+
+	/**
+	 * Two groups, two denominators — labelled rather than run together, because
+	 * reading them as one list makes the figures look like they do not add up.
+	 *
+	 * The image rows are the mutually exclusive outcomes of examining ONE
+	 * attachment, so they reconcile exactly to `scanned`, which is printed first
+	 * so that is checkable. Every outcome migrate_one() can return has a row:
+	 * omitting one (skipped_no_usable_rows was missing) silently loses images
+	 * from the total.
+	 *
+	 * The file rows count individual WebP/AVIF siblings across every size of
+	 * every image — a different and much larger denominator. They are not
+	 * expected to sum to `scanned` and must not be read as if they were.
+	 */
 	function scanReport( s ) {
 		var html = '<div class="slash-image-tools__report">';
+		html += statRow( t( 'stat_scanned', 'Images examined' ), s.scanned, 'is-total' );
 		html += statRow( t( 'stat_importable', 'Importable' ), s.migrated );
 		html += statRow( t( 'stat_already_migrated', 'Already migrated' ), s.already_migrated );
 		html += statRow( t( 'stat_already_ours', 'Already optimized by SlashImage' ), s.already_ours );
@@ -144,12 +163,18 @@
 		}
 		html += statRow( t( 'stat_skipped_mime', 'Skipped — unsupported type' ), s.skipped_unsupported_mime );
 		html += statRow( t( 'stat_skipped_missing', 'Skipped — file missing' ), s.skipped_file_missing );
+		html += statRow( t( 'stat_skipped_no_data', 'Skipped — no usable data' ), s.skipped_no_usable_rows );
+
+		html += statHeading( t( 'stat_heading_files', 'WebP and AVIF files' ) );
 		html += statRow( t( 'stat_webp', 'WebP files to serve' ), s.webp_linked + s.webp_already_present );
 		if ( s.avif_linked + s.avif_already_present > 0 ) {
 			html += statRow( t( 'stat_avif', 'AVIF files to serve' ), s.avif_linked + s.avif_already_present );
 		}
 		if ( s.webp_missing + s.avif_missing > 0 ) {
 			html += statRow( t( 'stat_missing_disk', 'Recorded but missing on disk' ), s.webp_missing + s.avif_missing );
+		}
+		if ( s.sentinel_skipped > 0 ) {
+			html += statRow( t( 'stat_sentinel', 'Skipped — no smaller version existed' ), s.sentinel_skipped );
 		}
 		html += '</div>';
 		return html;

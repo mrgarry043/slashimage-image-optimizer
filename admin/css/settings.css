@@ -884,6 +884,18 @@ p.slash-image-keyfield__deadkey { font-size: 12.5px; color: var(--si-muted); mar
 	font-size: 13px;
 }
 .slash-image-tools__stat strong { font-variant-numeric: tabular-nums; }
+/* The figure every image row below it adds up to — weighted so that reads. */
+.slash-image-tools__stat.is-total { font-weight: 600; }
+/* Separates the per-image rows from the per-file rows, which count a different
+   thing entirely and would otherwise look like part of the same total. */
+.slash-image-tools__stat-heading {
+	padding: 14px 0 6px;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: .04em;
+	text-transform: uppercase;
+	color: var(--slash-text-muted, #646970);
+}
 
 .slash-image-tools__note {
 	margin: 12px 0 0;

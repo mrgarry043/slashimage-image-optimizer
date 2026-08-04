@@ -379,6 +379,7 @@ class Slash_Image_Admin {
 					'failed'                    => __( 'That did not work. Please reload and try again.', 'slashimage-image-optimizer' ),
 					'failed_network'            => __( 'Could not reach the server. Check your connection and try again.', 'slashimage-image-optimizer' ),
 					'failed_scan_required'      => __( 'That scan has expired. Please scan again before migrating.', 'slashimage-image-optimizer' ),
+					'stat_scanned'              => __( 'Images examined', 'slashimage-image-optimizer' ),
 					'stat_importable'           => __( 'Importable', 'slashimage-image-optimizer' ),
 					'stat_already_migrated'     => __( 'Already migrated', 'slashimage-image-optimizer' ),
 					'stat_already_ours'         => __( 'Already optimized by SlashImage', 'slashimage-image-optimizer' ),
@@ -387,9 +388,12 @@ class Slash_Image_Admin {
 					'stat_skipped_already'      => __( '- of which already small enough', 'slashimage-image-optimizer' ),
 					'stat_skipped_mime'         => __( 'Skipped - unsupported type', 'slashimage-image-optimizer' ),
 					'stat_skipped_missing'      => __( 'Skipped - file missing', 'slashimage-image-optimizer' ),
+					'stat_skipped_no_data'      => __( 'Skipped - no usable data', 'slashimage-image-optimizer' ),
+					'stat_heading_files'        => __( 'WebP and AVIF files', 'slashimage-image-optimizer' ),
 					'stat_webp'                 => __( 'WebP files to serve', 'slashimage-image-optimizer' ),
 					'stat_avif'                 => __( 'AVIF files to serve', 'slashimage-image-optimizer' ),
 					'stat_missing_disk'         => __( 'Recorded but missing on disk', 'slashimage-image-optimizer' ),
+					'stat_sentinel'             => __( 'Skipped - no smaller version existed', 'slashimage-image-optimizer' ),
 					/* translators: %s: source plugin name, e.g. "ShortPixel". */
 					'btn_deactivate'            => __( 'Deactivate %s', 'slashimage-image-optimizer' ),
 					/* translators: %s: source plugin name, e.g. "ShortPixel". */
