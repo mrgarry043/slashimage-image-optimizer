@@ -1,8 +1,12 @@
 <?php
 /**
- * Frontend filter wiring for <picture> rewriting. Only instantiated on
- * non-admin requests when frontend_serving_mode === 'picture' and a
- * verified API key is present.
+ * Frontend filter wiring for <picture> rewriting. Instantiated on non-admin
+ * requests when frontend_serving_mode === 'picture' — see Slash_Image::run().
+ *
+ * There is deliberately NO API-key condition. Serving depends only on variant
+ * files existing on disk, and a site migrated from another optimizer serves
+ * its imported WebP and AVIF files without ever having held a key. Gating this
+ * on a key would silently stop delivery on exactly those sites.
  *
  * @package SlashImage
  */
