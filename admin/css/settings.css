@@ -867,6 +867,8 @@ p.slash-image-keyfield__deadkey { font-size: 12.5px; color: var(--si-muted); mar
 }
 .slash-image-tools__badge.is-detected { background: #eef0ff; color: #4438ca; }
 .slash-image-tools__badge.is-done     { background: #e6f6ec; color: #1e7a3c; }
+/* Amber, not green: work happened but the source is not finished with. */
+.slash-image-tools__badge.is-partial  { background: #fdf2e0; color: #8a5700; }
 .slash-image-tools__badge.is-none     { background: #f1f1f3; color: #646970; }
 
 .slash-image-tools__report {

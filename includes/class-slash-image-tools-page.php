@@ -118,6 +118,7 @@ class Slash_Image_Tools_Page {
 
 			$detect = call_user_func( array( $adapter, 'detect' ) );
 			$done   = isset( $migrated[ $slug ] ) ? $migrated[ $slug ] : null;
+			$total  = ! empty( $detect['ok'] ) ? (int) call_user_func( array( $adapter, 'count' ) ) : 0;
 
 			$cards[] = array(
 				'source'      => $slug,
@@ -125,7 +126,11 @@ class Slash_Image_Tools_Page {
 				'detected'    => ! empty( $detect['ok'] ),
 				'code'        => (string) ( $detect['code'] ?? '' ),
 				'message'     => (string) ( $detect['message'] ?? '' ),
-				'total'       => ! empty( $detect['ok'] ) ? (int) call_user_func( array( $adapter, 'count' ) ) : 0,
+				'total'       => $total,
+				// Whether a walk has reached the end of this source. The card
+				// offers deactivation on this and nothing else: a migrated count
+				// alone says work has happened, never that it finished.
+				'complete'    => Slash_Image_Migrate::is_complete( $slug, $total ),
 				'migrated'    => $done ? (int) $done['count'] : 0,
 				'migrated_at' => $done && $done['last_at'] > 0
 					? date_i18n( get_option( 'date_format' ), (int) $done['last_at'] )
@@ -207,6 +212,10 @@ class Slash_Image_Tools_Page {
 			// The run is finished: burn the token so a second migration needs a
 			// fresh scan, and hand back the server-derived done-state.
 			delete_transient( self::TOKEN_PREFIX . $source );
+			// Record the completed walk BEFORE deriving the summary, so the card
+			// this response produces is already the done-state one.
+			$adapter = Slash_Image_Migrate::adapter_for( $source );
+			Slash_Image_Migrate::mark_complete( $source, (int) call_user_func( array( $adapter, 'count' ) ) );
 			$summary  = Slash_Image_Migrate::migrated_summary();
 			$entry    = isset( $summary[ $source ] ) ? $summary[ $source ] : null;
 			$migrated = array(

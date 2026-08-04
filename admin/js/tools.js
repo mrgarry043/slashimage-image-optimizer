@@ -182,12 +182,24 @@
 		var body = '';
 		var badge, badgeClass, badgeIcon = '';
 
-		if ( card.migrated > 0 && ! st.stats ) {
+		// `complete` is the server's record of a walk that reached the end of the
+		// source. A migrated count alone only says work happened — never that it
+		// finished — so every done-state affordance hangs off this, not off the
+		// count. Deactivating the source mid-migration strips the data still to
+		// be imported, and on ShortPixel invites the "Remove all data" tool that
+		// deletes the very files we now serve.
+		var isComplete = card.migrated > 0 && !! card.complete;
+		var isPartial = card.migrated > 0 && ! card.complete;
+
+		if ( isComplete && ! st.stats ) {
 			badge = t( 'badge_migrated', 'Migrated' );
 			badgeClass = 'is-done';
 			// The check carries the meaning for anyone who does not read the
 			// label; the text stays for screen readers and translation.
 			badgeIcon = '<span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>';
+		} else if ( isPartial && ! st.stats ) {
+			badge = t( 'badge_partial', 'Partly migrated' );
+			badgeClass = 'is-partial';
 		} else if ( card.detected ) {
 			badge = t( 'badge_detected', 'Detected' );
 			badgeClass = 'is-detected';
@@ -212,8 +224,8 @@
 			body += '<div class="slash-image-alert is-error slash-image-alert--inline">' + esc( st.error ) + '</div>';
 		}
 
-		// Done state — no scan in progress and everything already imported.
-		if ( card.migrated > 0 && ! st.stats && ! st.busy ) {
+		// Done state — the source was walked to the end, nothing left to import.
+		if ( isComplete && ! st.stats && ! st.busy ) {
 			body += '<p class="slash-image-tools__done">' + esc(
 				( t( 'done_summary', '%1$d images migrated from %2$s on %3$s.' ) )
 					.replace( '%1$d', card.migrated )
@@ -229,8 +241,11 @@
 			return body;
 		}
 
-		// Pre-scan warning (ShortPixel only — its "Remove all data" tool deletes
-		// the very files we link to). Shown BEFORE any migration, on the card.
+		// ShortPixel only — its "Remove all data" tool deletes the very files we
+		// serve. Deliberately rendered ABOVE the partially-migrated block below,
+		// so it survives into that state: a half-migrated site is exactly where
+		// that tool does the most damage, and the done state is the only one
+		// entitled to replace this warning with the deactivate notice.
 		if ( card.detected && 'shortpixel' === card.source ) {
 			body += '<div class="slash-image-alert is-warning slash-image-alert--inline">' +
 				'<strong>' + esc( t( 'warn_title', 'Before you migrate' ) ) + '</strong> ' +
@@ -241,6 +256,26 @@
 		if ( card.detected && 'imagify' === card.source ) {
 			body += '<p class="slash-image-tools__muted">' + esc( t( 'note_imagify',
 				'Imagify\'s own uninstall leaves its optimization data and image files in place, so no special order is needed.' ) ) + '</p>';
+		}
+
+		// Partially-migrated state — work has happened but the source was never
+		// walked to the end, usually because the tab was closed mid-run. Reports
+		// the two counts side by side and routes back into the scan, and offers
+		// NO deactivation: the source still holds data we have not imported.
+		if ( isPartial && ! st.stats && ! st.busy ) {
+			body += '<p class="slash-image-tools__done">' + esc(
+				( t( 'partial_summary', '%1$d of %2$d images migrated from %3$s so far.' ) )
+					.replace( '%1$d', card.migrated )
+					.replace( '%2$d', card.total )
+					.replace( '%3$s', card.label )
+			) + '</p>';
+			body += '<p class="slash-image-tools__note">' + esc( t( 'note_partial',
+				'This migration has not finished. Scan again to see what is left, then choose Migrate now to carry on.' ) ) + '</p>';
+			body += '<div class="slash-image-tools__actions">';
+			body += '<button type="button" class="slash-image-btn slash-image-btn--primary" data-act="scan" data-source="' + esc( card.source ) + '">' +
+				esc( t( 'btn_rescan', 'Scan again' ) ) + '</button>';
+			body += '</div>';
+			return body;
 		}
 
 		// How much data the source HAS. Deliberately makes no importability
@@ -267,6 +302,11 @@
 		// already migrated or already ours — so the plugin is safe to turn off,
 		// same as the done state. With work outstanding, Migrate now is the
 		// primary action and deactivating would strip the source mid-job.
+		//
+		// This is also the recovery path for a site migrated before the
+		// completion record existed: it has no record, so it shows as partly
+		// migrated, and one scan finding nothing left restores the full
+		// done-state affordances without needing a backfill.
 		//
 		// A FAILED run must never qualify: its stats are still the zeroed
 		// starting set, which would otherwise read as "nothing to import" and
@@ -347,6 +387,11 @@
 					if ( c ) {
 						c.migrated = res.payload.migrated.count;
 						c.migrated_at = res.payload.migrated.date;
+						// ajax_run recorded the completed walk before answering,
+						// so the card must adopt it here too — otherwise a run
+						// that just finished falls back to the partial state on
+						// the stale `complete` from the initial detect.
+						c.complete = true;
 					}
 					// A completed migration returns the card to its done state.
 					st.stats = null;

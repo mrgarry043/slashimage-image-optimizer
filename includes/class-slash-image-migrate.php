@@ -19,6 +19,13 @@ class Slash_Image_Migrate {
 	/** Non-autoloaded resume cursor; deleted on completion. */
 	const CURSOR_OPTION = 'slash_image_migrate_cursor';
 
+	/**
+	 * Per-source record of a walk that reached the end of the source, written
+	 * only when an adapter reports done. Non-autoloaded: read on the Tools tab,
+	 * never on a front-end request.
+	 */
+	const COMPLETED_OPTION = 'slash_image_migrate_completed';
+
 	/** Provenance written on every migrated attachment. */
 	const META_MIGRATED_FROM = '_slash_image_migrated_from';
 	const META_MIGRATED_AT   = '_slash_image_migrated_at';
@@ -328,6 +335,7 @@ class Slash_Image_Migrate {
 
 		if ( ! $dry_run ) {
 			delete_option( self::CURSOR_OPTION );
+			self::mark_complete( $slug, (int) call_user_func( array( $resolved['adapter'], 'count' ) ) );
 		}
 
 		return array(
@@ -336,6 +344,67 @@ class Slash_Image_Migrate {
 			'message' => '',
 			'stats'   => $stats,
 		);
+	}
+
+	/**
+	 * Record that a walk reached the end of a source.
+	 *
+	 * Completion is a fact about the WALK, not about arithmetic: an attachment
+	 * whose file is gone, or whose source rows carry no usable figures, is
+	 * examined and permanently skipped, so a finished site keeps a standing gap
+	 * between the source's count and ours. Comparing the two would mark such a
+	 * site incomplete for good and keep offering a migration that can never
+	 * close. The adapter's own done flag ("the source returned a short batch")
+	 * is the only signal that means what it says, and until now it was consumed
+	 * by the client and thrown away.
+	 *
+	 * The source count is stored alongside so the record can go stale honestly:
+	 * if the other plugin optimizes more images afterwards, is_complete() sees
+	 * the larger count and reports work outstanding again.
+	 *
+	 * @param string $slug         Adapter slug.
+	 * @param int    $source_total The source's count() at the moment of completion.
+	 * @return void
+	 */
+	public static function mark_complete( $slug, $source_total ) {
+		$all = get_option( self::COMPLETED_OPTION, array() );
+		if ( ! is_array( $all ) ) {
+			$all = array();
+		}
+
+		$all[ (string) $slug ] = array(
+			'at'    => time(),
+			'total' => (int) $source_total,
+		);
+
+		update_option( self::COMPLETED_OPTION, $all, false );
+	}
+
+	/**
+	 * Whether a source has been walked to the end and has gained nothing since.
+	 *
+	 * A site migrated before this record existed reports false, which shows the
+	 * partially-migrated card rather than the done card. That is the safe way
+	 * round — it withholds the deactivate button rather than offering it wrongly
+	 * — and a single scan finding nothing left to import restores the full
+	 * done-state affordances.
+	 *
+	 * @param string $slug         Adapter slug.
+	 * @param int    $source_total The source's current count().
+	 * @return bool
+	 */
+	public static function is_complete( $slug, $source_total ) {
+		$all = get_option( self::COMPLETED_OPTION, array() );
+		if ( ! is_array( $all ) || ! isset( $all[ (string) $slug ] ) ) {
+			return false;
+		}
+
+		$entry = $all[ (string) $slug ];
+		if ( ! is_array( $entry ) ) {
+			return false;
+		}
+
+		return (int) $source_total <= (int) ( $entry['total'] ?? 0 );
 	}
 
 	/**

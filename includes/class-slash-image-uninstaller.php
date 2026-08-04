@@ -48,6 +48,7 @@ class Slash_Image_Uninstaller {
 		'slash_image_debug_log',
 		'slash_image_loopback_secret',
 		'slash_image_foreign_variants',
+		'slash_image_migrate_completed',
 		// Legacy options (kept for clean uninstall on upgraded sites).
 		'slash_image_bulk_queue',
 		'slash_image_new_uploads_queue',

@@ -356,6 +356,7 @@ class Slash_Image_Admin {
 				'i18n'     => array(
 					'badge_detected'            => __( 'Detected', 'slashimage-image-optimizer' ),
 					'badge_migrated'            => __( 'Migrated', 'slashimage-image-optimizer' ),
+					'badge_partial'             => __( 'Partly migrated', 'slashimage-image-optimizer' ),
 					'badge_none'                => __( 'Not detected', 'slashimage-image-optimizer' ),
 					'none_found'                => __( 'No optimization data found.', 'slashimage-image-optimizer' ),
 					'empty'                     => __( 'No other image optimizer was found on this site. Nothing to migrate.', 'slashimage-image-optimizer' ),
@@ -370,6 +371,9 @@ class Slash_Image_Admin {
 					'btn_migrate'               => __( 'Migrate now', 'slashimage-image-optimizer' ),
 					/* translators: %1$d: number of images. %2$s: source plugin name. %3$s: date. */
 					'done_summary'              => __( '%1$d images migrated from %2$s on %3$s.', 'slashimage-image-optimizer' ),
+					/* translators: %1$d: images migrated so far. %2$d: total images in the source. %3$s: source plugin name. */
+					'partial_summary'           => __( '%1$d of %2$d images migrated from %3$s so far.', 'slashimage-image-optimizer' ),
+					'note_partial'              => __( 'This migration has not finished. Scan again to see what is left, then choose Migrate now to carry on.', 'slashimage-image-optimizer' ),
 					/* translators: %1$d: images examined so far. %2$d: total images. */
 					'progress'                  => __( '%1$d of %2$d examined', 'slashimage-image-optimizer' ),
 					'failed'                    => __( 'That did not work. Please reload and try again.', 'slashimage-image-optimizer' ),
