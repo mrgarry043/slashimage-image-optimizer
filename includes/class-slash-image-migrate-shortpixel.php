@@ -125,16 +125,27 @@ class Slash_Image_Migrate_Shortpixel implements Slash_Image_Migrate_Adapter {
 		);
 	}
 
+	/**
+	 * Attachments this source holds optimization records for, at ANY status —
+	 * the same semantics as the Imagify adapter's count(), which counts every
+	 * attachment carrying _imagify_data regardless of outcome.
+	 *
+	 * Deliberately NOT "importable". This is the denominator the progress bar
+	 * and the Tools card divide `scanned` by, so it has to describe the set
+	 * migrate_batch() actually walks. Counting only SUCCESS while the walk
+	 * paged over every status made scanned overshoot total — a card reading
+	 * "14,760 of 14,740 examined". Which of them can be imported is decided per
+	 * attachment inside migrate_one(), and reported through the stat keys.
+	 *
+	 * @return int
+	 */
 	public static function count() {
 		global $wpdb;
 		$table = self::table();
+		// No placeholder remains, so prepare() is not used: calling it without
+		// one raises a WP notice. $table is prefix-derived, never user input.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		return (int) $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(DISTINCT attach_id) FROM {$table} WHERE status = %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- prefix-derived literal.
-				self::STATUS_SUCCESS
-			)
-		);
+		return (int) $wpdb->get_var( "SELECT COUNT(DISTINCT attach_id) FROM {$table}" );
 	}
 
 	public static function migrate_batch( $after, $limit, $dry_run ) {
@@ -147,6 +158,13 @@ class Slash_Image_Migrate_Shortpixel implements Slash_Image_Migrate_Adapter {
 
 		// Page by attachment, not by row: an attachment's rows must be imported
 		// together to compute its totals.
+		//
+		// Deliberately UNFILTERED by status, and count() matches it. Selecting
+		// only SUCCESS rows here would reconcile the numbers by making an
+		// attachment whose rows are ALL status 3 unreachable — and that branch
+		// in migrate_one() is the only producer of skipped_status and
+		// skipped_restored, so a reverted image would stop being reported and
+		// simply vanish from the report instead.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$ids = $wpdb->get_col(
 			$wpdb->prepare(
