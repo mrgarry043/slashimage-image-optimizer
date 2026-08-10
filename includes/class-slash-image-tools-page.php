@@ -52,6 +52,21 @@ class Slash_Image_Tools_Page {
 	 */
 	public function ajax_deactivate() {
 		$this->verify_request();
+
+		// Deactivation is plugin management, not settings management, so it
+		// needs the capability WordPress itself requires for the act — NOT the
+		// shared manage_options gate the other three Tools handlers use, which
+		// only ever read migration data.
+		//
+		// This is the whole multisite exposure in one line: a subsite
+		// administrator holds manage_options, but core's map_meta_cap adds
+		// manage_network_plugins to activate_plugins on multisite unless the
+		// network enables the Plugins menu — so without this check they could
+		// turn off a plugin they are not permitted to manage.
+		if ( ! current_user_can( 'activate_plugins' ) ) {
+			wp_send_json_error( array( 'code' => 'forbidden' ), 403 );
+		}
+
 		$source = $this->requested_source();
 
 		$plugin_file = $this->active_plugin_file( $source );
@@ -60,7 +75,20 @@ class Slash_Image_Tools_Page {
 			wp_send_json_error( array( 'code' => 'not_active' ), 409 );
 		}
 
-		deactivate_plugins( $plugin_file );
+		// A network activation belongs to the network admin, and undoing it
+		// affects every site on the network — never something to do from one
+		// subsite's Media screen. Reachable in practice: a plugin can be listed
+		// in BOTH this site's active_plugins and the network's
+		// active_sitewide_plugins, because network-activating does not remove a
+		// pre-existing per-site entry.
+		if ( is_multisite() && is_plugin_active_for_network( $plugin_file ) ) {
+			wp_send_json_error( array( 'code' => 'network_active' ), 409 );
+		}
+
+		// Confine to THIS site explicitly. Core treats a null $network_wide as
+		// "both", so the default would arm the network branch for exactly the
+		// both-listed case guarded above.
+		deactivate_plugins( $plugin_file, false, false );
 
 		wp_send_json_success(
 			array(
@@ -135,7 +163,12 @@ class Slash_Image_Tools_Page {
 				'migrated_at' => $done && $done['last_at'] > 0
 					? date_i18n( get_option( 'date_format' ), (int) $done['last_at'] )
 					: '',
-				'plugin_file' => $plugin_file,
+				// Drives the Deactivate button in tools.js, so it carries the
+				// path only when this user may actually deactivate it. The card
+				// itself still renders — visibility is active_plugin_file()'s
+				// job, eligibility is this. Offering a button the handler will
+				// refuse is worse than not offering it.
+				'plugin_file' => $this->can_deactivate( $plugin_file ) ? $plugin_file : '',
 			);
 		}
 
@@ -234,6 +267,28 @@ class Slash_Image_Tools_Page {
 				'migrated' => $migrated,
 			)
 		);
+	}
+
+	/**
+	 * Whether the CURRENT USER may deactivate this plugin from THIS site.
+	 *
+	 * Card visibility and deactivation eligibility used to be the same
+	 * predicate; on multisite they have to diverge, because a card can be worth
+	 * showing to someone who may not turn the plugin off.
+	 *
+	 * ajax_deactivate() re-checks both of these conditions itself rather than
+	 * calling this, so it can answer with a specific code ('forbidden' vs
+	 * 'network_active') instead of one opaque refusal. Keep the two in step.
+	 *
+	 * @param string $plugin_file Plugin file relative to the plugins dir.
+	 * @return bool
+	 */
+	private function can_deactivate( $plugin_file ) {
+		if ( '' === $plugin_file || ! current_user_can( 'activate_plugins' ) ) {
+			return false;
+		}
+
+		return ! ( is_multisite() && is_plugin_active_for_network( $plugin_file ) );
 	}
 
 	/**
