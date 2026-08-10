@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-04T17:04:33+00:00\n"
+"POT-Creation-Date: 2026-08-10T16:34:30+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: slashimage-image-optimizer\n"
@@ -860,35 +860,35 @@ msgstr ""
 msgid "Up to %1$d patterns, %2$d characters each."
 msgstr ""
 
-#: includes/class-slash-image-admin-notice.php:149
+#: includes/class-slash-image-admin-notice.php:179
 msgid "SlashImage needs an API key to optimize images"
 msgstr ""
 
-#: includes/class-slash-image-admin-notice.php:152
+#: includes/class-slash-image-admin-notice.php:182
 msgid "Sign up for a free account to start optimizing"
 msgstr ""
 
-#: includes/class-slash-image-admin-notice.php:157
+#: includes/class-slash-image-admin-notice.php:187
 msgid "Get a free API key"
 msgstr ""
 
-#: includes/class-slash-image-admin-notice.php:160
+#: includes/class-slash-image-admin-notice.php:190
 msgid "I have a key"
 msgstr ""
 
 #. translators: %s: linked "slashimage.com"
-#: includes/class-slash-image-admin-notice.php:197
+#: includes/class-slash-image-admin-notice.php:227
 #, php-format
 msgid "Bulk optimization paused - you have used all your credits. Visit %s to upgrade your plan."
 msgstr ""
 
 #. translators: %s: linked "SlashImage settings"
-#: includes/class-slash-image-admin-notice.php:204
+#: includes/class-slash-image-admin-notice.php:234
 #, php-format
 msgid "Your API key is invalid or was revoked. Optimizing is paused - reconnect in %s."
 msgstr ""
 
-#: includes/class-slash-image-admin-notice.php:205
+#: includes/class-slash-image-admin-notice.php:235
 msgid "SlashImage settings"
 msgstr ""
 
@@ -1782,11 +1782,11 @@ msgstr ""
 msgid "ShortPixel is installed but has no optimized images to import."
 msgstr ""
 
-#: includes/class-slash-image-migrate.php:107
+#: includes/class-slash-image-migrate.php:122
 msgid "Migration is not available on multisite networks yet, because optimization data is stored separately for each site."
 msgstr ""
 
-#: includes/class-slash-image-migrate.php:188
+#: includes/class-slash-image-migrate.php:203
 msgid "That migration source is not available."
 msgstr ""
 
