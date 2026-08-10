@@ -293,6 +293,14 @@ class Slash_Image_Rewriter {
 	 * plugin's single-extension name, so emitting our double-extension URL for
 	 * them would point <source> at a file that does not exist.
 	 *
+	 * BOTH branches delegate to the resolver, which owns the ?query/#fragment
+	 * split. The double branch used to concatenate onto the whole URL, which put
+	 * the extension AFTER the tail: photo.jpg?ver=123 became
+	 * photo.jpg?ver=123.webp. That is not a 404 — it is still a request for
+	 * photo.jpg — so the browser picked the WebP <source>, silently received the
+	 * larger original, and the page looked perfectly fine. Every srcset
+	 * candidate was corrupted the same way.
+	 *
 	 * @param string $url    Original image URL.
 	 * @param string $format 'webp' or 'avif'.
 	 * @param string $naming Slash_Image_Variant_Resolver::NAMING_* value.
@@ -302,7 +310,7 @@ class Slash_Image_Rewriter {
 		if ( Slash_Image_Variant_Resolver::NAMING_SINGLE === $naming ) {
 			return Slash_Image_Variant_Resolver::single_extension_name( $url, $format );
 		}
-		return $url . '.' . $format;
+		return Slash_Image_Variant_Resolver::double_extension_name( $url, $format );
 	}
 
 	private static function decode_attr( $value ) {

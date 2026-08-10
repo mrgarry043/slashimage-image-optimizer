@@ -251,15 +251,7 @@ class Slash_Image_Variant_Resolver {
 	 * @return string
 	 */
 	public static function single_extension_name( $target, $format ) {
-		$target = (string) $target;
-		$head   = $target;
-		$tail   = '';
-
-		$cut = strcspn( $target, '?#' );
-		if ( $cut < strlen( $target ) ) {
-			$head = substr( $target, 0, $cut );
-			$tail = substr( $target, $cut );
-		}
+		list( $head, $tail ) = self::split_tail( (string) $target );
 
 		$dot   = strrpos( $head, '.' );
 		$slash = strrpos( $head, '/' );
@@ -270,5 +262,43 @@ class Slash_Image_Variant_Resolver {
 		}
 
 		return substr( $head, 0, $dot ) . '.' . $format . $tail;
+	}
+
+	/**
+	 * Append $format as a SECOND extension, keeping any query or fragment last
+	 * (photo.jpg?ver=2 -> photo.jpg.webp?ver=2). The counterpart to
+	 * single_extension_name(), which replaces the extension instead.
+	 *
+	 * URLS ONLY. Disk paths must keep using plain concatenation — see locate(),
+	 * which builds `$path . '.' . $format` directly. '?' and '#' are legal in a
+	 * filename, so splitting on them would corrupt the probe for a file whose
+	 * name genuinely contains one.
+	 *
+	 * @param string $url    Image URL, absolute or relative.
+	 * @param string $format 'webp' or 'avif'.
+	 * @return string
+	 */
+	public static function double_extension_name( $url, $format ) {
+		list( $head, $tail ) = self::split_tail( (string) $url );
+		return $head . '.' . $format . $tail;
+	}
+
+	/**
+	 * Split a target into [ path-ish head, '?query#fragment' tail ].
+	 *
+	 * The single place that knows where a URL's tail begins. Both naming
+	 * helpers share it so the two conventions can never disagree about what
+	 * counts as the tail — the defect this consolidates was exactly that
+	 * disagreement, with one branch tail-aware and the other not.
+	 *
+	 * @param string $target Path or URL.
+	 * @return array{0:string,1:string}
+	 */
+	private static function split_tail( $target ) {
+		$cut = strcspn( $target, '?#' );
+		if ( $cut < strlen( $target ) ) {
+			return array( substr( $target, 0, $cut ), substr( $target, $cut ) );
+		}
+		return array( $target, '' );
 	}
 }
