@@ -16,7 +16,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Slash_Image_Migrate {
 
-	/** Non-autoloaded resume cursor; deleted on completion. */
+	/**
+	 * Non-autoloaded resume cursors, keyed by adapter slug: [ slug => cursor ].
+	 * A slug's entry is removed when its walk completes; the option is dropped
+	 * once no slug has a position left.
+	 *
+	 * Per-slug because the cursor is an attachment-ID position within ONE
+	 * source's own row set. Sharing a single scalar across adapters meant an
+	 * interrupted ShortPixel run left a position that a later Imagify run
+	 * resumed from, silently skipping every Imagify attachment below it and
+	 * then recording that source as complete.
+	 *
+	 * The KEY is deliberately unchanged. A pre-1.2.0-dev site holds a bare
+	 * scalar here, and the option is not in the uninstaller's list — renaming
+	 * would strand that value on every upgraded site with nothing able to
+	 * remove it. Reading through cursors() discards the stale scalar instead.
+	 */
 	const CURSOR_OPTION = 'slash_image_migrate_cursor';
 
 	/**
@@ -266,9 +281,13 @@ class Slash_Image_Migrate {
 	/**
 	 * Run a migration to completion, batching by attachment ID.
 	 *
-	 * Built on run_batch() so the two drivers cannot drift. Unlike run_batch(),
-	 * this OWNS the cursor option: a killed CLI run resumes where it stopped,
-	 * and the option is deleted on completion.
+	 * Shares the adapter's migrate_batch() call with run_batch() but does NOT
+	 * delegate to it — the two drivers each drive the adapter directly. Edit
+	 * one and the other is unaffected; anything that must hold for both belongs
+	 * in the adapter or in a helper both call.
+	 *
+	 * Unlike run_batch(), this OWNS the cursor: a killed CLI run resumes where
+	 * it stopped, and its slug's entry is dropped on completion.
 	 *
 	 * @param string        $slug      Adapter slug.
 	 * @param bool          $dry_run   Scan only; write nothing.
@@ -294,9 +313,9 @@ class Slash_Image_Migrate {
 
 		$batch = max( 1, (int) $batch );
 
-		// Resume a killed run. Dry runs never read or write the cursor: a scan
-		// must always report on the whole library.
-		$cursor = $dry_run ? 0 : (int) get_option( self::CURSOR_OPTION, 0 );
+		// Resume a killed run of THIS source. Dry runs never read or write the
+		// cursor: a scan must always report on the whole library.
+		$cursor = $dry_run ? 0 : self::cursor_for( $slug );
 
 		while ( true ) {
 			$result = call_user_func( array( $resolved['adapter'], 'migrate_batch' ), $cursor, $batch, $dry_run );
@@ -321,7 +340,7 @@ class Slash_Image_Migrate {
 			$cursor = (int) ( $result['cursor'] ?? $cursor );
 
 			if ( ! $dry_run ) {
-				update_option( self::CURSOR_OPTION, $cursor, false );
+				self::set_cursor( $slug, $cursor );
 			}
 
 			// Keep the object cache from growing across a long run: every batch
@@ -334,7 +353,7 @@ class Slash_Image_Migrate {
 		}
 
 		if ( ! $dry_run ) {
-			delete_option( self::CURSOR_OPTION );
+			self::clear_cursor( $slug );
 			self::mark_complete( $slug, (int) call_user_func( array( $resolved['adapter'], 'count' ) ) );
 		}
 
@@ -344,6 +363,74 @@ class Slash_Image_Migrate {
 			'message' => '',
 			'stats'   => $stats,
 		);
+	}
+
+	/**
+	 * The whole cursor map, normalised.
+	 *
+	 * Anything that is not an array is discarded and reported as no positions
+	 * held. That is what retires the pre-1.2.0-dev scalar: a site upgrading
+	 * mid-run loses one resume position and re-walks that source from the
+	 * start, which costs time but cannot skip an attachment. The check MUST
+	 * come before any (int) cast — casting an array yields 1, which would
+	 * resume just past ID 1 and silently skip nothing visible.
+	 *
+	 * @return array<string, int>
+	 */
+	private static function cursors() {
+		$all = get_option( self::CURSOR_OPTION, array() );
+		return is_array( $all ) ? $all : array();
+	}
+
+	/**
+	 * Resume position for one source, 0 when it holds none.
+	 *
+	 * @param string $slug Adapter slug.
+	 * @return int
+	 */
+	private static function cursor_for( $slug ) {
+		$all = self::cursors();
+		return isset( $all[ (string) $slug ] ) ? (int) $all[ (string) $slug ] : 0;
+	}
+
+	/**
+	 * Store one source's resume position, leaving every other source's alone.
+	 *
+	 * Read-modify-write, so a second driver working a different source keeps
+	 * its position. Two drivers on the SAME source still last-write-wins, which
+	 * is unchanged from the scalar behaviour and is why run_batch() continues
+	 * to leave the cursor to its caller.
+	 *
+	 * @param string $slug   Adapter slug.
+	 * @param int    $cursor Exclusive attachment-ID position.
+	 * @return void
+	 */
+	private static function set_cursor( $slug, $cursor ) {
+		$all                   = self::cursors();
+		$all[ (string) $slug ] = (int) $cursor;
+		update_option( self::CURSOR_OPTION, $all, false );
+	}
+
+	/**
+	 * Drop one source's resume position on completion.
+	 *
+	 * Deliberately NOT delete_option() on the whole map — that would wipe an
+	 * unrelated source's in-progress position. The option itself is removed
+	 * only once the last entry goes, so a finished site leaves nothing behind.
+	 *
+	 * @param string $slug Adapter slug.
+	 * @return void
+	 */
+	private static function clear_cursor( $slug ) {
+		$all = self::cursors();
+		unset( $all[ (string) $slug ] );
+
+		if ( empty( $all ) ) {
+			delete_option( self::CURSOR_OPTION );
+			return;
+		}
+
+		update_option( self::CURSOR_OPTION, $all, false );
 	}
 
 	/**
