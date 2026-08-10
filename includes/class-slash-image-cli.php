@@ -596,7 +596,7 @@ class Slash_Image_CLI {
 	 * ## OPTIONS
 	 *
 	 * <source>
-	 * : Which optimizer to import from. Currently: shortpixel
+	 * : Which optimizer to import from: shortpixel, imagify
 	 *
 	 * [--dry-run]
 	 * : Scan and report what would be imported, writing nothing.
@@ -608,6 +608,8 @@ class Slash_Image_CLI {
 	 *
 	 *     $ wp slashimage migrate shortpixel --dry-run
 	 *     $ wp slashimage migrate shortpixel
+	 *     $ wp slashimage migrate imagify --dry-run
+	 *     $ wp slashimage migrate imagify
 	 *
 	 * @when after_wp_load
 	 *
@@ -715,13 +717,28 @@ class Slash_Image_CLI {
 			return;
 		}
 
+		// Servable = at the OTHER plugin's filename (_linked) PLUS already at our
+		// own (_already_present). Both are delivered by the resolver; only
+		// _missing is not. Reporting _linked alone told an Imagify site "0 WebP
+		// file(s) will be served in place" while the rows directly above counted
+		// 150 under "Already at our own filename" — Imagify's naming is identical
+		// to ours, so a correct migration lands entirely in _already_present and
+		// the headline read as if nothing had been achieved.
+		//
+		// Matches the Tools card, which has always summed the two
+		// (admin/js/tools.js scanReport()). The per-format figures here total the
+		// three sibling rows above; they do not decompose against the combined
+		// "Already at our own filename:" row, which is webp+avif in one number.
+		$webp_servable = $s['webp_linked'] + $s['webp_already_present'];
+		$avif_servable = $s['avif_linked'] + $s['avif_already_present'];
+
 		WP_CLI::success(
 			sprintf(
 				'Imported %d attachment(s) from %s. %d WebP and %d AVIF file(s) will be served in place.',
 				$s['migrated'],
 				$label,
-				$s['webp_linked'],
-				$s['avif_linked']
+				$webp_servable,
+				$avif_servable
 			)
 		);
 	}
