@@ -2,9 +2,9 @@
 /**
  * Plugin Name:       SlashImage - Image Optimizer
  * Description:       Compress images and serve modern formats (WebP, AVIF) automatically.
- * Version:           1.1.1
+ * Version:           1.2.0
  * Requires at least: 6.5
- * Tested up to:      7.0
+ * Tested up to:      7.0.2
  * Requires PHP:      7.4
  * Author:            SlashImage
  * Author URI:        https://slashimage.com
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'SLASH_IMAGE_VERSION', '1.1.1' );
+define( 'SLASH_IMAGE_VERSION', '1.2.0' );
 define( 'SLASH_IMAGE_FILE', __FILE__ );
 define( 'SLASH_IMAGE_PATH', plugin_dir_path( __FILE__ ) );
 define( 'SLASH_IMAGE_URL', plugin_dir_url( __FILE__ ) );

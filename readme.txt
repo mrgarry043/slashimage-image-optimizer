@@ -2,9 +2,9 @@
 Contributors: slashimage
 Tags: image-optimization, compress-images, webp, avif, optimize-images
 Requires at least: 6.5
-Tested up to: 7.0
+Tested up to: 7.0.2
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -100,6 +100,9 @@ No. Images are queued and compressed in the background, so your upload returns i
 = Can I optimize images I already have? =
 Yes. Go to Media to Bulk Optimize and click Start. SlashImage processes your existing Media Library in the background.
 
+= I already use another optimizer. Can I switch without redoing everything? =
+Yes. If ShortPixel or Imagify has already optimized your library, open the Tools tab on the SlashImage settings screen. It imports their optimization data and serves the WebP and AVIF files they already created, so nothing has to be optimized a second time. Keep the other plugin active until the import finishes — the Tools tab only lists optimizers that are still active. You scan first and see exactly what will be imported before anything changes, and the other plugin's files and settings are never modified. Migration runs on single-site installs only for now.
+
 = Can I restore my original images? =
 Yes. SlashImage backs up every original before making changes. Restore any image from the Media Library or the attachment edit screen.
 
@@ -119,7 +122,7 @@ Yes. SlashImage works alongside caching plugins and CDNs, including Cloudflare, 
 Generate a separate sub-key for each site at slashimage.com. Install the plugin on each site with its own key. Usage is tracked per key and billing details are never displayed in the plugin.
 
 = Does it work on WordPress Multisite? =
-Yes. Each subsite is configured independently with its own API key and processing queue.
+Yes. Each subsite is configured independently with its own API key and processing queue. The migration tool in the Tools tab is single-site only for now.
 
 = What image formats are supported? =
 SlashImage optimizes JPEG, PNG, and GIF images, including every thumbnail size WordPress generates. It creates WebP and AVIF versions of your JPEGs and PNGs, and converts animated GIFs to animated WebP, all served automatically to modern browsers.
@@ -141,6 +144,15 @@ For general bugs, please open a thread on the plugin support forum. For security
 
 == Changelog ==
 
+= 1.2.0 =
+* New: Migrate from another optimizer — the new Tools tab imports optimization data from ShortPixel or Imagify, so their work counts as SlashImage's and the WebP and AVIF files they already created are served by SlashImage. Scan first to see exactly what will be imported, then migrate. Nothing is re-compressed, and the other plugin's files, tables and settings are never modified.
+* New: Once a migration finishes, SlashImage offers to deactivate the plugin you migrated from, so two optimizers aren't rewriting your pages at the same time.
+* New: `wp slashimage migrate <shortpixel|imagify> [--dry-run] [--batch-size=<n>]` runs the same migration from the command line — useful for very large libraries, and it works even if the other plugin has already been removed.
+* Fix: Images referenced with a query string (for example `photo.jpg?ver=123`) now receive their WebP and AVIF versions. Previously the modern format was requested at a malformed address, so the original file was returned instead — the page looked correct while quietly serving the larger image.
+* Fix: Bulk "Restore originals" now reports how many images were skipped and why, instead of counting only the ones it queued.
+* Fix: After a bulk action, the result notice is scrolled into view, so acting from the bottom of a long media list no longer leaves the outcome off-screen.
+* Improvement: The "needs an API key" banner no longer appears on the SlashImage settings screen itself, where the API Key field and the status pill already say the same thing.
+
 = 1.1.1 =
 * Fix: re-optimizing already optimized images now works correctly. The original is restored from its backup first, so images are never compressed twice. Images without a backup are skipped and reported.
 
@@ -151,6 +163,9 @@ For general bugs, please open a thread on the plugin support forum. For security
 * Initial release.
 
 == Upgrade Notice ==
+
+= 1.2.0 =
+Switching from ShortPixel or Imagify? The new Tools tab imports their optimization data and serves the WebP and AVIF files they already made. Also fixes WebP/AVIF delivery for images whose URLs carry a query string.
 
 = 1.0.0 =
 Initial release.

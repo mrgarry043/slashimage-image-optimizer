@@ -23,7 +23,7 @@ Install it, paste a free API key, and every image you upload from then on is com
 
 ## Requirements
 
-- WordPress 6.5 or higher (tested up to 7.0)
+- WordPress 6.5 or higher (tested up to 7.0.2)
 - PHP 7.4 or higher
 - A free SlashImage API key from https://slashimage.com
 
