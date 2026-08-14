@@ -50,6 +50,7 @@ class Slash_Image_Uninstaller {
 		'slash_image_cron_last_run',
 		'slash_image_foreign_variants',
 		'slash_image_migrate_completed',
+		'slash_image_migrate_cursor',
 		// Legacy options (kept for clean uninstall on upgraded sites).
 		'slash_image_bulk_queue',
 		'slash_image_new_uploads_queue',
@@ -66,6 +67,7 @@ class Slash_Image_Uninstaller {
 		'slash_image_cron_probe_fired',
 		'slash_image_bulk_recent_completions',
 		'slash_image_chain_running',
+		'slash_image_stall_liveness',
 		'slash_image_stats_bundle',
 		'slash_image_admin_notice',
 		'slash_image_plan_cache',
@@ -91,10 +93,16 @@ class Slash_Image_Uninstaller {
 	const POSTMETA_KEYS = array(
 		'_slash_image_data',
 		'_slash_image_backup',
+		'_slash_image_status',
+		'_slash_image_mode_override',
 		// Flat stats fields.
 		'_slash_image_saved_bytes',
 		'_slash_image_original_bytes',
 		'_slash_image_thumb_count',
+		'_slash_image_best_format_bytes',
+		// Migration provenance (Slash_Image_Migrate).
+		'_slash_image_migrated_at',
+		'_slash_image_migrated_from',
 	);
 
 	const HTACCESS_MARKER = 'Slash Image';
