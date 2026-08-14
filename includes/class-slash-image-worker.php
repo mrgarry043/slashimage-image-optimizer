@@ -163,6 +163,13 @@ class Slash_Image_Worker {
 	 * itself, neither of which may be guarded).
 	 */
 	public static function cron_tick() {
+		// Cron-execution heartbeat, and deliberately the FIRST statement —
+		// ahead of the chain guard below. What it records is that WP-Cron fired
+		// this event, which is true whether or not the tick goes on to do any
+		// work, so a loopback-driven site must still stamp it. Read by
+		// Slash_Image_Cron_Probe to classify the host without a probe.
+		Slash_Image_Cron_Probe::record_cron_run();
+
 		if ( Slash_Image_Loopback::is_chain_running() ) {
 			return;
 		}
