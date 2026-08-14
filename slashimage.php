@@ -4,7 +4,7 @@
  * Description:       Compress images and serve modern formats (WebP, AVIF) automatically.
  * Version:           1.2.1
  * Requires at least: 6.5
- * Tested up to:      7.0.2
+ * Tested up to:      7.0.4
  * Requires PHP:      7.4
  * Author:            SlashImage
  * Author URI:        https://slashimage.com
