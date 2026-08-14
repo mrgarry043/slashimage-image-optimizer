@@ -69,11 +69,29 @@ interface Slash_Image_Migrate_Adapter {
 	 * than materialise the whole library, and MUST NOT write anything when
 	 * $dry_run is true.
 	 *
+	 * A batch MAY stop before exhausting the page it fetched — a time budget is
+	 * the reason today (Slash_Image_Migrate::should_stop_before_next_attachment())
+	 * — so $cursor and $done are defined against what was PROCESSED, never
+	 * against what was fetched:
+	 *
+	 * - $cursor is the highest attachment ID this batch finished processing, or
+	 *   $after unchanged when it processed none. Reporting the page's highest
+	 *   fetched ID instead would skip every attachment between the last one
+	 *   processed and the end of the page, permanently and silently — they sit
+	 *   below the next cursor and no later batch looks there again.
+	 * - $done is true only when BOTH every fetched attachment was processed AND
+	 *   the page came back short of $limit. A short page alone no longer implies
+	 *   exhaustion, because an early stop leaves work inside the page it read.
+	 *
+	 * Re-processing is safe and cheap by design (migrate_one() is idempotent —
+	 * an already-migrated attachment costs one meta read), so a cursor that is
+	 * too CONSERVATIVE is always the correct way to be wrong here.
+	 *
 	 * @param int  $after   Exclusive attachment-ID cursor; 0 starts at the beginning.
 	 * @param int  $limit   Maximum attachments to examine in this batch.
 	 * @param bool $dry_run When true, scan and report but write nothing.
 	 * @return array {
-	 *     @type int   $cursor Highest attachment ID examined (the next $after).
+	 *     @type int   $cursor Highest attachment ID PROCESSED (the next $after).
 	 *     @type bool  $done   True when the source is exhausted.
 	 *     @type array $stats  Counters keyed by Slash_Image_Migrate::stat_keys().
 	 * }

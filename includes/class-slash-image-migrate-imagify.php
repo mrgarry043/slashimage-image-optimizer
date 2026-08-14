@@ -100,18 +100,38 @@ class Slash_Image_Migrate_Imagify implements Slash_Image_Migrate_Adapter {
 			);
 		}
 
+		// Cursor and done are defined against what was PROCESSED, not what was
+		// fetched — see Slash_Image_Migrate_Adapter::migrate_batch(). $last_id
+		// starts at $after so a batch that processes nothing reports no progress
+		// rather than jumping the page.
+		$fetched   = count( $ids );
+		$deadline  = Slash_Image_Migrate::batch_deadline();
+		$processed = 0;
+		$last_id   = $after;
+
 		foreach ( $ids as $attachment_id ) {
+			// Between attachments only, never mid-attachment: an attachment's
+			// sizes are imported as one unit, and write_meta() is what makes it
+			// migrated. Breaking inside would leave a half-described attachment
+			// that the next batch would not revisit.
+			if ( Slash_Image_Migrate::should_stop_before_next_attachment( $processed, microtime( true ), $deadline ) ) {
+				break;
+			}
+
 			++$stats['scanned'];
 			foreach ( self::migrate_one( $attachment_id, $dry_run ) as $key => $delta ) {
 				if ( isset( $stats[ $key ] ) ) {
 					$stats[ $key ] += (int) $delta;
 				}
 			}
+
+			$last_id = $attachment_id;
+			++$processed;
 		}
 
 		return array(
-			'cursor' => (int) max( $ids ),
-			'done'   => count( $ids ) < $limit,
+			'cursor' => (int) $last_id,
+			'done'   => $processed === $fetched && $fetched < $limit,
 			'stats'  => $stats,
 		);
 	}

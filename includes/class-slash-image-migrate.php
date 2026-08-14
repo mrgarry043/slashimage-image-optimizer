@@ -49,6 +49,19 @@ class Slash_Image_Migrate {
 	const DEFAULT_BATCH_SIZE = 200;
 
 	/**
+	 * Wall-seconds a single batch may spend before it stops STARTING new
+	 * attachments. Lower than the worker's 25 s because this budget is spent
+	 * inside a browser's AJAX request rather than a cron tick, so it sits under
+	 * the shortest proxy read timeout a shared host is likely to impose.
+	 *
+	 * BATCH_SIZE alone cannot bound a batch: 200 attachments is a count, not a
+	 * duration, and per-attachment cost varies by an order of magnitude with the
+	 * number of registered sizes and the filesystem. The count caps the query;
+	 * this caps the request.
+	 */
+	const TIME_BUDGET_SEC = 15;
+
+	/**
 	 * Registered adapters, slug => class name.
 	 *
 	 * @return array
@@ -218,6 +231,52 @@ class Slash_Image_Migrate {
 			'message' => '',
 			'adapter' => $adapter,
 		);
+	}
+
+	/**
+	 * Deadline for the batch about to run, as a microtime(true) instant.
+	 *
+	 * Called once per batch by each adapter rather than passed through
+	 * migrate_batch(), which keeps the adapter interface unchanged — a third
+	 * party's adapter that never calls this still works, it simply is not
+	 * time-budgeted.
+	 *
+	 * @return float
+	 */
+	public static function batch_deadline() {
+		/**
+		 * Filter the per-batch wall-clock budget for a migration, in seconds.
+		 *
+		 * @param float $seconds Default self::TIME_BUDGET_SEC.
+		 */
+		$budget = (float) apply_filters( 'slash_image_migrate_time_budget', self::TIME_BUDGET_SEC );
+
+		// A zero or negative budget would stop every batch after its first
+		// attachment, turning a migration into one attachment per request.
+		return microtime( true ) + max( 1.0, $budget );
+	}
+
+	/**
+	 * Pure stop predicate for an adapter's batch loop (no runtime reads — so it
+	 * is unit-testable). Mirrors Slash_Image_Worker::should_stop_before_next_row().
+	 *
+	 * The FIRST attachment of a batch ($processed === 0) is never stopped. Without
+	 * that guard a host slower than the whole budget would return the cursor it
+	 * was given, unchanged, forever — the client would keep requesting batches,
+	 * each would do nothing, and the migration would never advance while looking
+	 * busy. One attachment per request is slow; zero is a hang.
+	 *
+	 * @param int   $processed Attachments already processed in this batch.
+	 * @param float $now       Current microtime(true).
+	 * @param float $deadline  Instant from batch_deadline().
+	 * @return bool
+	 */
+	public static function should_stop_before_next_attachment( $processed, $now, $deadline ) {
+		if ( (int) $processed <= 0 ) {
+			return false;
+		}
+
+		return (float) $now >= (float) $deadline;
 	}
 
 	/**
