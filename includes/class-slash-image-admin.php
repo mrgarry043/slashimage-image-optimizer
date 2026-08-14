@@ -358,7 +358,10 @@ class Slash_Image_Admin {
 					'badge_migrated'            => __( 'Migrated', 'slashimage-image-optimizer' ),
 					'badge_partial'             => __( 'Partly migrated', 'slashimage-image-optimizer' ),
 					'badge_none'                => __( 'Not detected', 'slashimage-image-optimizer' ),
+					'badge_blocked'             => __( 'Not available', 'slashimage-image-optimizer' ),
 					'none_found'                => __( 'No optimization data found.', 'slashimage-image-optimizer' ),
+					// Fallback only: the server sends its own preflight reason.
+					'blocked'                   => __( 'Migration is not available on this site.', 'slashimage-image-optimizer' ),
 					'empty'                     => __( 'No other image optimizer was found on this site. Nothing to migrate.', 'slashimage-image-optimizer' ),
 					/* translators: %1$d: number of images. %2$s: source plugin name, e.g. "Imagify". */
 					'detected_count'            => __( '%1$d images with %2$s optimization data.', 'slashimage-image-optimizer' ),

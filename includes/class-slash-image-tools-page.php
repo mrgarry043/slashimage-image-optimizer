@@ -130,7 +130,20 @@ class Slash_Image_Tools_Page {
 	public function ajax_detect() {
 		$this->verify_request();
 
-		$migrated = Slash_Image_Migrate::migrated_summary();
+		// Global refusals first, and ONCE — preflight() is not per-adapter.
+		// ajax_scan()/ajax_run() already reach it through run_batch() ->
+		// resolve(), so without this the card rendered fully live and the
+		// refusal surfaced only after a Scan click, having paid for the
+		// detection queries on the way.
+		//
+		// A blocked site still gets a card per ACTIVE source, so the user
+		// learns which optimizer was found and why nothing can be done about
+		// it — but detect(), count() and migrated_summary() are all skipped.
+		// Those are the queries the refusal makes pointless.
+		$pre     = Slash_Image_Migrate::preflight();
+		$blocked = empty( $pre['ok'] );
+
+		$migrated = $blocked ? array() : Slash_Image_Migrate::migrated_summary();
 		$cards    = array();
 
 		foreach ( Slash_Image_Migrate::adapters() as $slug => $adapter ) {
@@ -144,6 +157,21 @@ class Slash_Image_Tools_Page {
 				continue;
 			}
 
+			if ( $blocked ) {
+				// Identity + reason only. The message is the adapter-layer
+				// preflight string, which is written for this audience (see
+				// CLAUDE.md § WP-CLI) and is what `wp slashimage migrate`
+				// prints too, so both surfaces refuse in the same words.
+				$cards[] = array(
+					'source'  => $slug,
+					'label'   => (string) call_user_func( array( $adapter, 'label' ) ),
+					'blocked' => true,
+					'code'    => (string) $pre['code'],
+					'message' => (string) $pre['message'],
+				);
+				continue;
+			}
+
 			$detect = call_user_func( array( $adapter, 'detect' ) );
 			$done   = isset( $migrated[ $slug ] ) ? $migrated[ $slug ] : null;
 			$total  = ! empty( $detect['ok'] ) ? (int) call_user_func( array( $adapter, 'count' ) ) : 0;
@@ -151,6 +179,7 @@ class Slash_Image_Tools_Page {
 			$cards[] = array(
 				'source'      => $slug,
 				'label'       => (string) call_user_func( array( $adapter, 'label' ) ),
+				'blocked'     => false,
 				'detected'    => ! empty( $detect['ok'] ),
 				'code'        => (string) ( $detect['code'] ?? '' ),
 				'message'     => (string) ( $detect['message'] ?? '' ),

@@ -216,7 +216,12 @@
 		var isComplete = card.migrated > 0 && !! card.complete;
 		var isPartial = card.migrated > 0 && ! card.complete;
 
-		if ( isComplete && ! st.stats ) {
+		if ( card.blocked ) {
+			// A standing refusal from the server's preflight, not a per-source
+			// state — neutral badge, same as "Not detected".
+			badge = t( 'badge_blocked', 'Not available' );
+			badgeClass = 'is-none';
+		} else if ( isComplete && ! st.stats ) {
 			badge = t( 'badge_migrated', 'Migrated' );
 			badgeClass = 'is-done';
 			// The check carries the meaning for anyone who does not read the
@@ -237,6 +242,17 @@
 		body += '<h3>' + esc( card.label ) + '</h3>';
 		body += '<span class="slash-image-tools__badge ' + badgeClass + '">' + badgeIcon + esc( badge ) + '</span>';
 		body += '</div>';
+
+		// Blocked: the plugin is named so the user knows what was found, and the
+		// server's reason is shown, but the card carries no [data-act] control
+		// and so is inert. Checked BEFORE the not-detected return below, which
+		// would otherwise print "No optimization data found." — untrue here,
+		// since nothing was looked for.
+		if ( card.blocked ) {
+			body += '<div class="slash-image-alert slash-image-alert--inline">' +
+				esc( card.message || t( 'blocked', 'Migration is not available on this site.' ) ) + '</div>';
+			return body;
+		}
 
 		if ( ! card.detected && ! card.migrated ) {
 			body += '<p class="slash-image-tools__muted">' + esc( card.message || t( 'none_found', 'No optimization data found.' ) ) + '</p>';
@@ -367,7 +383,11 @@
 				esc( t( 'empty', 'No other image optimizer was found on this site. Nothing to migrate.' ) ) + '</p>';
 			return;
 		}
-		var anything = cards.some( function ( c ) { return c.detected || c.migrated > 0; } );
+		// `blocked` counts as something to show: those cards carry no counts
+		// (nothing was queried), so without it a multisite install would fall
+		// through to "No other image optimizer was found on this site" while
+		// ShortPixel sat active right there.
+		var anything = cards.some( function ( c ) { return c.blocked || c.detected || c.migrated > 0; } );
 		if ( ! anything ) {
 			root.innerHTML = '<p class="slash-image-tools__muted">' +
 				esc( t( 'empty', 'No other image optimizer was found on this site. Nothing to migrate.' ) ) + '</p>';
