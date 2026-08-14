@@ -307,7 +307,7 @@
 		// claim: only a scan can tell how much of it we can actually import,
 		// and most of it may already be migrated.
 		if ( card.detected ) {
-			body += '<p>' + esc(
+			body += '<p class="slash-image-tools__count">' + esc(
 				( t( 'detected_count', '%1$d images with %2$s optimization data.' ) )
 					.replace( '%1$d', card.total )
 					.replace( '%2$s', card.label )

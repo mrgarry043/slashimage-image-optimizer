@@ -865,6 +865,18 @@ p.slash-image-keyfield__deadkey { font-size: 12.5px; color: var(--si-muted); mar
 	margin: 0 0 4px;
 	font-weight: 600;
 }
+
+/* The count line sits under the ShortPixel warning alert on one card and the
+   Imagify note on the other. Neither of those carries a bottom margin, and the
+   panel-wide reset strips the paragraph's own — so it renders flush against
+   both. Spaced from the top rather than from either notice, so one rule covers
+   both cards. Adjacent-sibling collapse keeps this at 12px against the card
+   head's 10px when no notice precedes it.
+   The `p.` prefix is required, not stylistic: the reset is
+   `.slash-image-app--settings p` (0,1,1), so a bare `.slash-image-tools__count`
+   (0,1,0) loses on specificity however late it appears. Same idiom as
+   `p.slash-image-keyfield__invalid-msg` above. */
+p.slash-image-tools__count { margin: 12px 0 0; }
 .slash-image-tools__badge.is-detected { background: #eef0ff; color: #4438ca; }
 .slash-image-tools__badge.is-done     { background: #e6f6ec; color: #1e7a3c; }
 /* Amber, not green: work happened but the source is not finished with. */
