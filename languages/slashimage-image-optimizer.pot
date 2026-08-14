@@ -2,14 +2,14 @@
 # This file is distributed under the GPLv2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: SlashImage - Image Optimizer 1.2.0\n"
+"Project-Id-Version: SlashImage - Image Optimizer 1.2.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/slashimage-image-optimizer\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-10T16:46:52+00:00\n"
+"POT-Creation-Date: 2026-08-14T22:37:06+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: slashimage-image-optimizer\n"
@@ -1222,159 +1222,167 @@ msgid "Not detected"
 msgstr ""
 
 #: includes/class-slash-image-admin.php:361
-msgid "No optimization data found."
+msgid "Not available"
 msgstr ""
 
 #: includes/class-slash-image-admin.php:362
+msgid "No optimization data found."
+msgstr ""
+
+#: includes/class-slash-image-admin.php:364
+msgid "Migration is not available on this site."
+msgstr ""
+
+#: includes/class-slash-image-admin.php:365
 msgid "No other image optimizer was found on this site. Nothing to migrate."
 msgstr ""
 
 #. translators: %1$d: number of images. %2$s: source plugin name, e.g. "Imagify".
-#: includes/class-slash-image-admin.php:364
+#: includes/class-slash-image-admin.php:367
 #, php-format
 msgid "%1$d images with %2$s optimization data."
 msgstr ""
 
-#: includes/class-slash-image-admin.php:365
+#: includes/class-slash-image-admin.php:368
 msgid "Before you migrate"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:366
+#: includes/class-slash-image-admin.php:369
 msgid "Keep ShortPixel installed until this finishes. Afterwards you can uninstall it normally - but do NOT use its \"Remove all data\" tool. That permanently deletes the WebP and AVIF files on your server, which SlashImage now serves to your visitors directly. They cannot be recovered."
 msgstr ""
 
-#: includes/class-slash-image-admin.php:367
+#: includes/class-slash-image-admin.php:370
 msgid "Imagify's own uninstall leaves its optimization data and image files in place, so no special order is needed."
 msgstr ""
 
-#: includes/class-slash-image-admin.php:368
+#: includes/class-slash-image-admin.php:371
 msgid "Migrated images have no SlashImage backup, so Restore and forced re-optimize are not available for them."
 msgstr ""
 
-#: includes/class-slash-image-admin.php:369
+#: includes/class-slash-image-admin.php:372
 msgid "Scan"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:370
+#: includes/class-slash-image-admin.php:373
 msgid "Scan again"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:371
+#: includes/class-slash-image-admin.php:374
 msgid "Migrate now"
 msgstr ""
 
 #. translators: %1$d: number of images. %2$s: source plugin name. %3$s: date.
-#: includes/class-slash-image-admin.php:373
+#: includes/class-slash-image-admin.php:376
 #, php-format
 msgid "%1$d images migrated from %2$s on %3$s."
 msgstr ""
 
 #. translators: %1$d: images migrated so far. %2$d: total images in the source. %3$s: source plugin name.
-#: includes/class-slash-image-admin.php:375
+#: includes/class-slash-image-admin.php:378
 #, php-format
 msgid "%1$d of %2$d images migrated from %3$s so far."
 msgstr ""
 
-#: includes/class-slash-image-admin.php:376
+#: includes/class-slash-image-admin.php:379
 msgid "This migration has not finished. Scan again to see what is left, then choose Migrate now to carry on."
 msgstr ""
 
 #. translators: %1$d: images examined so far. %2$d: total images.
-#: includes/class-slash-image-admin.php:378
+#: includes/class-slash-image-admin.php:381
 #, php-format
 msgid "%1$d of %2$d examined"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:379
+#: includes/class-slash-image-admin.php:382
 msgid "That did not work. Please reload and try again."
 msgstr ""
 
-#: includes/class-slash-image-admin.php:380
+#: includes/class-slash-image-admin.php:383
 msgid "Could not reach the server. Check your connection and try again."
 msgstr ""
 
-#: includes/class-slash-image-admin.php:381
+#: includes/class-slash-image-admin.php:384
 msgid "That scan has expired. Please scan again before migrating."
 msgstr ""
 
-#: includes/class-slash-image-admin.php:382
+#: includes/class-slash-image-admin.php:385
 msgid "Images examined"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:383
+#: includes/class-slash-image-admin.php:386
 msgid "Ready to migrate"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:384
+#: includes/class-slash-image-admin.php:387
 msgid "Already migrated"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:385
+#: includes/class-slash-image-admin.php:388
 msgid "Already optimized by SlashImage"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:386
+#: includes/class-slash-image-admin.php:389
 msgid "Skipped - cannot be migrated"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:387
+#: includes/class-slash-image-admin.php:390
 msgid "- of which reverted"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:388
+#: includes/class-slash-image-admin.php:391
 msgid "- of which already small enough"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:389
+#: includes/class-slash-image-admin.php:392
 msgid "Skipped - unsupported type"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:390
+#: includes/class-slash-image-admin.php:393
 msgid "Skipped - file missing"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:391
+#: includes/class-slash-image-admin.php:394
 msgid "Skipped - no usable data"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:392
+#: includes/class-slash-image-admin.php:395
 msgid "WebP and AVIF files"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:393
+#: includes/class-slash-image-admin.php:396
 msgid "WebP files to serve"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:394
+#: includes/class-slash-image-admin.php:397
 msgid "AVIF files to serve"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:395
+#: includes/class-slash-image-admin.php:398
 msgid "Files no longer on the server"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:396
+#: includes/class-slash-image-admin.php:399
 msgid "Skipped - no smaller version existed"
 msgstr ""
 
 #. translators: %s: source plugin name, e.g. "ShortPixel".
-#: includes/class-slash-image-admin.php:398
+#: includes/class-slash-image-admin.php:401
 #, php-format
 msgid "Deactivate %s"
 msgstr ""
 
 #. translators: %s: source plugin name, e.g. "ShortPixel".
-#: includes/class-slash-image-admin.php:400
+#: includes/class-slash-image-admin.php:403
 #, php-format
 msgid "Deactivate %s now?"
 msgstr ""
 
-#: includes/class-slash-image-admin.php:401
+#: includes/class-slash-image-admin.php:404
 msgid "Two active optimizers both rewrite front-end markup, which can double-wrap images. Now that the data is imported, this plugin can be turned off."
 msgstr ""
 
 #. translators: %s: source plugin name, e.g. "Imagify".
-#: includes/class-slash-image-admin.php:403
+#: includes/class-slash-image-admin.php:406
 #, php-format
 msgid "%s deactivated. Its imported data stays with SlashImage."
 msgstr ""
@@ -1782,11 +1790,11 @@ msgstr ""
 msgid "ShortPixel is installed but has no optimized images to import."
 msgstr ""
 
-#: includes/class-slash-image-migrate.php:122
+#: includes/class-slash-image-migrate.php:135
 msgid "Migration is not available on multisite networks yet, because optimization data is stored separately for each site."
 msgstr ""
 
-#: includes/class-slash-image-migrate.php:203
+#: includes/class-slash-image-migrate.php:221
 msgid "That migration source is not available."
 msgstr ""
 
@@ -1794,7 +1802,7 @@ msgstr ""
 msgid "Original (full size)"
 msgstr ""
 
-#: includes/class-slash-image-worker.php:473
+#: includes/class-slash-image-worker.php:480
 msgid "Unknown error."
 msgstr ""
 
