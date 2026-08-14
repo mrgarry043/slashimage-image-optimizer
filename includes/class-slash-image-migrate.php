@@ -191,10 +191,15 @@ class Slash_Image_Migrate {
 	 * source's own detection. Shared by run() and run_batch() so a refusal reads
 	 * identically whichever drives it.
 	 *
-	 * @param string $slug Adapter slug.
+	 * @param string $slug        Adapter slug.
+	 * @param bool   $skip_detect Skip the source's own detect() — for a
+	 *                            CONTINUATION batch, where an earlier batch in
+	 *                            the same walk already answered it. preflight()
+	 *                            still runs: it is the refusal that must never be
+	 *                            skipped, and it costs no query.
 	 * @return array ['ok' => bool, 'code' => string, 'message' => string, 'adapter' => string]
 	 */
-	public static function resolve( $slug ) {
+	public static function resolve( $slug, $skip_detect = false ) {
 		$fail = function ( $code, $message ) {
 			return array(
 				'ok'      => false,
@@ -217,12 +222,14 @@ class Slash_Image_Migrate {
 			);
 		}
 
-		$detect = call_user_func( array( $adapter, 'detect' ) );
-		if ( empty( $detect['ok'] ) ) {
-			return $fail(
-				(string) ( $detect['code'] ?? 'undetected' ),
-				(string) ( $detect['message'] ?? '' )
-			);
+		if ( ! $skip_detect ) {
+			$detect = call_user_func( array( $adapter, 'detect' ) );
+			if ( empty( $detect['ok'] ) ) {
+				return $fail(
+					(string) ( $detect['code'] ?? 'undetected' ),
+					(string) ( $detect['message'] ?? '' )
+				);
+			}
 		}
 
 		return array(
@@ -298,7 +305,25 @@ class Slash_Image_Migrate {
 	 * @return array ['ok','code','message','cursor','done','stats']
 	 */
 	public static function run_batch( $slug, $cursor = 0, $dry_run = false, $batch = self::DEFAULT_BATCH_SIZE ) {
-		$resolved = self::resolve( $slug );
+		// detect() is per-BATCH work answering a per-WALK question, and it is not
+		// free: the ShortPixel adapter spends a SHOW TABLES LIKE plus a
+		// COUNT(DISTINCT attach_id) on every call, Imagify a COUNT(DISTINCT
+		// post_id). run() already resolves once for exactly this reason; this is
+		// the same saving for the request-per-batch driver, and it matters more
+		// here because the time budget makes batches smaller and more numerous.
+		//
+		// A non-zero cursor is what identifies a continuation: a walk always
+		// starts at 0, and the cursor only ever advances to an attachment ID this
+		// source produced, so reaching here with one means an earlier batch
+		// already resolved this adapter successfully. The FIRST batch of every
+		// walk still pays for a full resolve, so what a fresh scan or migration
+		// reports is unchanged.
+		//
+		// A source that disappears mid-walk (its table dropped) does not need
+		// detect() to be caught: the adapter's own paging query then returns no
+		// rows and the batch reports done, which is the same outcome by a
+		// cheaper route.
+		$resolved = self::resolve( $slug, (int) $cursor > 0 );
 		if ( empty( $resolved['ok'] ) ) {
 			return array(
 				'ok'      => false,
