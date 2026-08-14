@@ -118,6 +118,9 @@ class Slash_Image_Migrate_Claim {
 	 * Order matters: our own name is checked BEFORE the other plugin's, matching
 	 * the order Slash_Image_Variant_Resolver::locate() probes at serve time, so
 	 * the bytes recorded here are the bytes that will actually be delivered.
+	 * The PREDICATE matches too - both probes are is_readable(), because that is
+	 * what locate() gates on for both names. Anything looser claims files the
+	 * resolver will refuse.
 	 *
 	 * For a derived-name source $their_file and $target are the same path, so
 	 * this collapses to "present, or never generated".
@@ -133,7 +136,12 @@ class Slash_Image_Migrate_Claim {
 	 * @return array
 	 */
 	private static function claim_at( $their_file, $target, $format ) {
-		if ( file_exists( $target ) ) {
+		// is_readable(), not file_exists(): a file that exists but cannot be
+		// opened (restrictive umask, suexec, open_basedir) is not servable
+		// however present it is, and locate() will refuse it. Strictly
+		// narrowing - is_readable() implies existence - so this can only claim
+		// less than before, never more.
+		if ( is_readable( $target ) ) {
 			return array(
 				'bytes' => (int) filesize( $target ),
 				'stats' => array( $format . '_already_present' => 1 ),
