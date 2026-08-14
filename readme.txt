@@ -4,7 +4,7 @@ Tags: image-optimization, compress-images, webp, avif, optimize-images
 Requires at least: 6.5
 Tested up to: 7.0.2
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -143,6 +143,14 @@ For general bugs, please open a thread on the plugin support forum. For security
 6. Attachment edit screen showing the SlashImage meta box with optimization details.
 
 == Changelog ==
+
+= 1.2.1 =
+* Fix: The "WP-Cron is disabled" warning no longer appears on sites that run a real server cron job. SlashImage now detects background activity directly instead of inferring it from a setting, so a host with a system cron is recognised straight away.
+* Fix: Migration is now reliable on large media libraries. A long run no longer expires partway through and sends you back to the start, and each batch of images is kept inside a safe time limit so slower hosting cannot cut a request short.
+* Fix: Migration reports no longer count WebP and AVIF files the server cannot actually read. On some sites this also restores modern-format delivery for those images, which were being recorded as ready to serve but never served.
+* Fix: On multisite installs the Tools tab now explains that migration is not available yet, instead of offering a scan that fails after you click it.
+* Fix: Corrected the missing spacing under the notice on the migration cards.
+* Fix: Uninstalling with "remove all data" enabled now clears everything SlashImage stored — a few settings and per-image records were previously left behind.
 
 = 1.2.0 =
 * New: Migrate from another optimizer — the new Tools tab imports optimization data from ShortPixel or Imagify, so their work counts as SlashImage's and the WebP and AVIF files they already created are served by SlashImage. Scan first to see exactly what will be imported, then migrate. Nothing is re-compressed, and the other plugin's files, tables and settings are never modified.
