@@ -258,6 +258,23 @@ class Slash_Image_Tools_Page {
 			wp_send_json_error( array( 'code' => 'scan_required' ), 409 );
 		}
 
+		// Slide the TTL on every accepted batch, which turns TOKEN_TTL from a
+		// budget for the WHOLE run into a maximum IDLE GAP between batches. A
+		// library big enough to need more than TOKEN_TTL of wall-clock would
+		// otherwise expire its own token mid-migration and refuse the next batch
+		// with scan_required, having already imported part of the library — and
+		// the longer the library, the likelier that is, so the failure grew with
+		// exactly the case the batching exists to serve.
+		//
+		// Same value, fresh expiry: this re-arms the clock, it never mints a new
+		// token, so a run cannot escalate its own authority by continuing.
+		//
+		// Only a RUN slides. A scan that completed and then sat idle for
+		// TOKEN_TTL still expires, and that is intended — its findings go stale
+		// the moment anything else writes, so Migrate should demand a fresh scan
+		// rather than act on a stale picture of the library.
+		set_transient( self::TOKEN_PREFIX . $source, $expected, self::TOKEN_TTL );
+
 		$result = Slash_Image_Migrate::run_batch( $source, $cursor, false, self::BATCH_SIZE );
 		if ( empty( $result['ok'] ) ) {
 			wp_send_json_error(
